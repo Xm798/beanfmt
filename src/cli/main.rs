@@ -4,6 +4,7 @@ use husk::recursive::format_recursive;
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
+use std::process;
 
 #[derive(Parser)]
 #[command(name = "husk", about = "A fast beancount file formatter")]
@@ -32,9 +33,9 @@ struct Cli {
     #[arg(long)]
     spaces_in_braces: bool,
 
-    /// CJK double-width alignment
-    #[arg(long, default_value_t = true)]
-    fixed_cjk_width: bool,
+    /// Disable CJK double-width alignment
+    #[arg(long)]
+    no_fixed_cjk_width: bool,
 
     /// Sort entries by date
     #[arg(long)]
@@ -62,7 +63,7 @@ fn main() {
             _ => ThousandsSeparator::Keep,
         },
         spaces_in_braces: cli.spaces_in_braces,
-        fixed_cjk_width: cli.fixed_cjk_width,
+        fixed_cjk_width: !cli.no_fixed_cjk_width,
         sort: cli.sort,
         recursive: cli.recursive,
     };
@@ -82,9 +83,10 @@ fn main() {
                 let multi = results.len() > 1;
                 for result in results {
                     if cli.write {
-                        fs::write(&result.path, &result.content).unwrap_or_else(|e| {
-                            eprintln!("Error writing {}: {}", result.path.display(), e)
-                        });
+                        if let Err(e) = fs::write(&result.path, &result.content) {
+                            eprintln!("Error writing {}: {}", result.path.display(), e);
+                            process::exit(1);
+                        }
                     } else {
                         if multi {
                             println!("==> {} <==", result.path.display());
@@ -99,9 +101,10 @@ fn main() {
                 });
                 let output = husk::format(&input, &options);
                 if cli.write {
-                    fs::write(&path, &output).unwrap_or_else(|e| {
-                        eprintln!("Error writing {}: {}", path.display(), e)
-                    });
+                    if let Err(e) = fs::write(&path, &output) {
+                        eprintln!("Error writing {}: {}", path.display(), e);
+                        process::exit(1);
+                    }
                 } else {
                     print!("{}", output);
                 }
