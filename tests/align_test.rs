@@ -110,6 +110,11 @@ fn align_posting_with_cost_and_price() {
     assert!(result.contains("AAPL"));
     assert!(result.contains("{150.00 USD}"));
     assert!(result.contains("@ 155.00 USD"));
+    // Verify cost starts at cost_column (consistent with currency_column convention)
+    let cost_start = result.find("{150.00 USD}").unwrap();
+    let before_cost = &result[..cost_start];
+    let cost_pos = display_width(before_cost, true) + 1;
+    assert_eq!(cost_pos, 60, "cost should start at cost_column={}", 60);
 }
 
 #[test]

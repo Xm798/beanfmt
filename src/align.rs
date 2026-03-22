@@ -60,8 +60,8 @@ pub fn align_posting(
     // Align cost to cost_column if present
     if let Some(cost) = cost {
         let current_width = display_width(&result, cjk);
-        let cost_padding = if options.cost_column > current_width + 1 {
-            options.cost_column - current_width - 1
+        let cost_padding = if options.cost_column > current_width + 2 {
+            options.cost_column - 1 - current_width - 1
         } else {
             1
         };
