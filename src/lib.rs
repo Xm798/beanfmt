@@ -7,6 +7,6 @@ pub mod sort;
 
 use options::Options;
 
-pub fn format(input: &str, options: &Options) -> String {
-    todo!()
+pub fn format(input: &str, _options: &Options) -> String {
+    input.to_string()
 }
