@@ -22,13 +22,13 @@ pub fn normalize_indent(line: &str, indent: &str) -> String {
     let leading = &line[..leading_len];
 
     // Count effective width: tabs count as base_width, spaces as 1
-    let base_width = if indent.len() > 0 { indent.len() } else { 4 };
+    let base_width = if !indent.is_empty() { indent.len() } else { 4 };
     let effective: usize = leading
         .chars()
         .map(|c| if c == '\t' { base_width } else { 1 })
         .sum();
 
-    let depth = ((effective + base_width - 1) / base_width).max(1);
+    let depth = effective.div_ceil(base_width).max(1);
     format!("{}{}", indent.repeat(depth), trimmed)
 }
 
@@ -57,10 +57,10 @@ pub fn normalize_thousands(num_str: &str, separator: &ThousandsSeparator) -> Str
             let stripped = num_str.replace(',', "");
 
             // Handle sign prefix
-            let (sign, rest) = if stripped.starts_with('-') {
-                ("-", &stripped[1..])
-            } else if stripped.starts_with('+') {
-                ("+", &stripped[1..])
+            let (sign, rest) = if let Some(r) = stripped.strip_prefix('-') {
+                ("-", r)
+            } else if let Some(r) = stripped.strip_prefix('+') {
+                ("+", r)
             } else {
                 ("", stripped.as_str())
             };

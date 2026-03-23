@@ -24,6 +24,7 @@ pub fn pad_to_width(s: &str, target_width: usize, fixed_cjk_width: bool) -> Stri
 }
 
 /// Align a posting line so currency starts at `currency_column`.
+#[allow(clippy::too_many_arguments)]
 pub fn align_posting(
     indent: &str,
     account: &str,

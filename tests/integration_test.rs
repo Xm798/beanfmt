@@ -257,6 +257,40 @@ fn format_with_sort() {
 }
 
 #[test]
+fn format_cjk_fixture() {
+    let input = include_str!("fixtures/cjk.beancount");
+    let opts = Options {
+        currency_column: 50,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+    for line in result.lines() {
+        if line.contains("CNY") && line.starts_with("    ") {
+            let cny_start = line.find("CNY").unwrap();
+            let before = &line[..cny_start];
+            let width = husk::align::display_width(before, true);
+            // currency_column is 1-indexed, so 0-indexed position is column - 1
+            assert_eq!(width, 49, "CJK line not aligned: {}", line);
+        }
+    }
+}
+
+#[test]
+fn format_normalize_fixture() {
+    let input = include_str!("fixtures/normalize.beancount");
+    let opts = Options {
+        thousands_separator: ThousandsSeparator::Add,
+        spaces_in_braces: true,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+    assert!(result.contains("; comment without space"), "Comment should be normalized");
+    assert!(result.contains(";; narration with extra spaces"), "Narration should be normalized");
+    assert!(result.contains("1,234,567.89"), "Thousands should be added");
+    assert!(result.contains("{ 150 USD }"), "Braces should have spaces");
+}
+
+#[test]
 fn format_without_sort_preserves_order() {
     let input = "\
 2024-01-03 * \"C\" \"C\"

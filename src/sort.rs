@@ -110,10 +110,8 @@ fn parse_segments(input: &str) -> Vec<Segment> {
 
         if is_continuation(&parsed) {
             if let Some(ref mut entry) = current_entry {
-                if let Line::MetaItem { key, value, .. } = &parsed {
-                    if *key == "time" {
-                        entry.time = parse_time(value);
-                    }
+                if let Line::MetaItem { key, value, .. } = &parsed && *key == "time" {
+                    entry.time = parse_time(value);
                 }
                 entry.lines.push(raw.to_string());
             } else {

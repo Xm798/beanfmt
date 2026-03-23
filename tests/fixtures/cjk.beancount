@@ -1,0 +1,7 @@
+2024-01-15 * "超市" "买菜"
+  Expenses:餐饮:中餐  50.00 CNY
+  Assets:银行:招商银行
+
+2024-01-15 balance Assets:银行:招商银行  10000.00 CNY
+
+2024-01-01 open Expenses:餐饮:中餐 CNY

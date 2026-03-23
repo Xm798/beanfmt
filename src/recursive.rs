@@ -64,10 +64,8 @@ pub fn format_recursive(root_path: &Path, options: &Options) -> Vec<FormattedFil
         let includes = extract_includes(&raw, base_dir);
 
         for inc in includes {
-            if let Ok(canonical) = fs::canonicalize(&inc) {
-                if visited.insert(canonical.clone()) {
-                    queue.push_back(canonical);
-                }
+            if let Ok(canonical) = fs::canonicalize(&inc) && visited.insert(canonical.clone()) {
+                queue.push_back(canonical);
             }
         }
 

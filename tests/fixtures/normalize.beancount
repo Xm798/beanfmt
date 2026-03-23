@@ -1,0 +1,10 @@
+;comment without space
+;;  narration with extra spaces
+
+2024-01-15 * "Test" "Thousands"
+  Expenses:Food  1234567.89 USD
+  Assets:Bank
+
+2024-01-15 * "Test" "Braces"
+  Assets:Stock  10 AAPL {150 USD}
+  Assets:Bank
