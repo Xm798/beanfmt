@@ -1,4 +1,4 @@
-# Husk
+# Beanfmt
 
 [中文文档](README.zh-CN.md)
 
@@ -47,7 +47,7 @@ npm run package
 Install the generated `.vsix` file:
 
 ```bash
-code --install-extension editors/code/husk-beancount-formatter-0.1.0.vsix
+code --install-extension editors/code/beanfmt-beancount-formatter-0.1.0.vsix
 ```
 
 > Note: `python` and `wasm` features are mutually exclusive.
@@ -58,22 +58,22 @@ code --install-extension editors/code/husk-beancount-formatter-0.1.0.vsix
 
 ```bash
 # Format from stdin
-cat ledger.beancount | husk
+cat ledger.beancount | beanfmt
 
 # Format a file (print to stdout)
-husk ledger.beancount
+beanfmt ledger.beancount
 
 # Format in-place
-husk -w ledger.beancount
+beanfmt -w ledger.beancount
 
 # Recursively format all included files in-place
-husk --recursive -w ledger.beancount
+beanfmt --recursive -w ledger.beancount
 
 # Custom alignment columns
-husk --currency-column 60 --cost-column 65 ledger.beancount
+beanfmt --currency-column 60 --cost-column 65 ledger.beancount
 
 # Add thousands separators and sort by date
-husk --thousands add --sort ledger.beancount
+beanfmt --thousands add --sort ledger.beancount
 ```
 
 ### Options
@@ -93,26 +93,26 @@ husk --thousands add --sort ledger.beancount
 ### Python
 
 ```python
-import husk
+import beanfmt
 
 # Format a string
-output = husk.format(source, currency_column=60, sort=True)
+output = beanfmt.format(source, currency_column=60, sort=True)
 
 # Format a file
-output = husk.format_file("ledger.beancount")
+output = beanfmt.format_file("ledger.beancount")
 
 # Reusable options
-opts = husk.Options(currency_column=60, thousands_separator="add")
-output = husk.format(source, options=opts)
+opts = beanfmt.Options(currency_column=60, thousands_separator="add")
+output = beanfmt.format(source, options=opts)
 
 # Recursive formatting — returns list of (path, content) tuples
-results = husk.format_recursive("ledger.beancount")
+results = beanfmt.format_recursive("ledger.beancount")
 ```
 
 ### WASM
 
 ```javascript
-import { format, format_default } from "husk";
+import { format, format_default } from "beanfmt";
 
 // Format with default options
 const output = format_default(source);
@@ -127,7 +127,7 @@ Install the extension, then configure in `settings.json`:
 
 ```jsonc
 "[beancount]": {
-    "editor.defaultFormatter": "husk.husk-beancount-formatter",
+    "editor.defaultFormatter": "beanfmt.beanfmt-beancount-formatter",
     "editor.formatOnSave": true
 }
 ```
@@ -136,13 +136,13 @@ Available settings:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `husk.indent` | `"    "` | Indentation string |
-| `husk.currencyColumn` | `70` | Currency alignment column |
-| `husk.costColumn` | `75` | Cost/price alignment column |
-| `husk.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
-| `husk.spacesInBraces` | `false` | Spaces inside cost braces |
-| `husk.fixedCJKWidth` | `true` | CJK double-width alignment |
-| `husk.sort` | `false` | Sort entries by date |
+| `beanfmt.indent` | `"    "` | Indentation string |
+| `beanfmt.currencyColumn` | `70` | Currency alignment column |
+| `beanfmt.costColumn` | `75` | Cost/price alignment column |
+| `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
+| `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
+| `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |
+| `beanfmt.sort` | `false` | Sort entries by date |
 
 ## License
 

@@ -1,13 +1,13 @@
 use clap::Parser;
-use husk::options::{Options, ThousandsSeparator};
-use husk::recursive::format_recursive;
+use beanfmt::options::{Options, ThousandsSeparator};
+use beanfmt::recursive::format_recursive;
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
 use std::process;
 
 #[derive(Parser)]
-#[command(name = "husk", about = "A fast beancount file formatter")]
+#[command(name = "beanfmt", about = "A fast beancount file formatter")]
 struct Cli {
     /// Input file(s). Use - for stdin.
     #[arg(default_value = "-")]
@@ -69,7 +69,7 @@ fn main() {
             io::stdin()
                 .read_to_string(&mut input)
                 .expect("Failed to read stdin");
-            let output = husk::format(&input, &options);
+            let output = beanfmt::format(&input, &options);
             print!("{}", output);
         } else {
             let path = PathBuf::from(file);
@@ -94,7 +94,7 @@ fn main() {
                     eprintln!("Error reading {}: {}", path.display(), e);
                     process::exit(1);
                 });
-                let output = husk::format(&input, &options);
+                let output = beanfmt::format(&input, &options);
                 if cli.write {
                     if let Err(e) = fs::write(&path, &output) {
                         eprintln!("Error writing {}: {}", path.display(), e);

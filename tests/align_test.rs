@@ -1,5 +1,5 @@
-use husk::align::*;
-use husk::options::Options;
+use beanfmt::align::*;
+use beanfmt::options::Options;
 
 fn opts(currency_col: usize, cost_col: usize) -> Options {
     Options {

@@ -1,5 +1,5 @@
-use husk::normalize::*;
-use husk::options::ThousandsSeparator;
+use beanfmt::normalize::*;
+use beanfmt::options::ThousandsSeparator;
 
 // normalize_indent tests
 

@@ -1,4 +1,4 @@
-# Husk
+# Beanfmt
 
 快速的 [beancount](https://beancount.github.io/) 文件格式化工具，支持 CJK 双宽度字符对齐。
 
@@ -45,7 +45,7 @@ npm run package
 安装生成的 `.vsix` 文件：
 
 ```bash
-code --install-extension editors/code/husk-beancount-formatter-0.1.0.vsix
+code --install-extension editors/code/beanfmt-beancount-formatter-0.1.0.vsix
 ```
 
 > 注意：`python` 和 `wasm` 特性互斥，不能同时启用。
@@ -56,22 +56,22 @@ code --install-extension editors/code/husk-beancount-formatter-0.1.0.vsix
 
 ```bash
 # 从标准输入格式化
-cat ledger.beancount | husk
+cat ledger.beancount | beanfmt
 
 # 格式化文件（输出到标准输出）
-husk ledger.beancount
+beanfmt ledger.beancount
 
 # 原地格式化
-husk -w ledger.beancount
+beanfmt -w ledger.beancount
 
 # 递归格式化所有 include 的文件
-husk --recursive -w ledger.beancount
+beanfmt --recursive -w ledger.beancount
 
 # 自定义对齐列
-husk --currency-column 60 --cost-column 65 ledger.beancount
+beanfmt --currency-column 60 --cost-column 65 ledger.beancount
 
 # 添加千分位分隔符并按日期排序
-husk --thousands add --sort ledger.beancount
+beanfmt --thousands add --sort ledger.beancount
 ```
 
 ### 选项
@@ -91,26 +91,26 @@ husk --thousands add --sort ledger.beancount
 ### Python
 
 ```python
-import husk
+import beanfmt
 
 # 格式化字符串
-output = husk.format(source, currency_column=60, sort=True)
+output = beanfmt.format(source, currency_column=60, sort=True)
 
 # 格式化文件
-output = husk.format_file("ledger.beancount")
+output = beanfmt.format_file("ledger.beancount")
 
 # 可复用的选项对象
-opts = husk.Options(currency_column=60, thousands_separator="add")
-output = husk.format(source, options=opts)
+opts = beanfmt.Options(currency_column=60, thousands_separator="add")
+output = beanfmt.format(source, options=opts)
 
 # 递归格式化 - 返回 (路径, 内容) 元组列表
-results = husk.format_recursive("ledger.beancount")
+results = beanfmt.format_recursive("ledger.beancount")
 ```
 
 ### WASM
 
 ```javascript
-import { format, format_default } from "husk";
+import { format, format_default } from "beanfmt";
 
 // 使用默认选项格式化
 const output = format_default(source);
@@ -125,7 +125,7 @@ const output = format(source, "    ", 70, 75, "keep", false, true, false);
 
 ```jsonc
 "[beancount]": {
-    "editor.defaultFormatter": "husk.husk-beancount-formatter",
+    "editor.defaultFormatter": "beanfmt.beanfmt-beancount-formatter",
     "editor.formatOnSave": true
 }
 ```
@@ -134,13 +134,13 @@ const output = format(source, "    ", 70, 75, "keep", false, true, false);
 
 | 设置项 | 默认值 | 说明 |
 |--------|--------|------|
-| `husk.indent` | `"    "` | 缩进字符串 |
-| `husk.currencyColumn` | `70` | 货币对齐列 |
-| `husk.costColumn` | `75` | 成本/价格对齐列 |
-| `husk.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |
-| `husk.spacesInBraces` | `false` | 花括号内添加空格 |
-| `husk.fixedCJKWidth` | `true` | CJK 双宽度字符对齐 |
-| `husk.sort` | `false` | 按日期排序 |
+| `beanfmt.indent` | `"    "` | 缩进字符串 |
+| `beanfmt.currencyColumn` | `70` | 货币对齐列 |
+| `beanfmt.costColumn` | `75` | 成本/价格对齐列 |
+| `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |
+| `beanfmt.spacesInBraces` | `false` | 花括号内添加空格 |
+| `beanfmt.fixedCJKWidth` | `true` | CJK 双宽度字符对齐 |
+| `beanfmt.sort` | `false` | 按日期排序 |
 
 ## 许可证
 

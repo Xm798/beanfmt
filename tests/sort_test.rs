@@ -1,4 +1,4 @@
-use husk::sort::{parse_time, sort_input};
+use beanfmt::sort::{parse_time, sort_input};
 
 #[test]
 fn already_sorted_unchanged() {

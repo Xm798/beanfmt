@@ -1,5 +1,5 @@
-use husk::options::Options;
-use husk::recursive::format_recursive;
+use beanfmt::options::Options;
+use beanfmt::recursive::format_recursive;
 use std::fs;
 use tempfile::TempDir;
 

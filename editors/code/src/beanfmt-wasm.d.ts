@@ -1,4 +1,4 @@
-// Auto-generated types from wasm-pack — keep in sync with wasm/husk.d.ts
+// Auto-generated types from wasm-pack — keep in sync with wasm/beanfmt.d.ts
 declare module "*/wasm" {
   export function format(
     input: string,

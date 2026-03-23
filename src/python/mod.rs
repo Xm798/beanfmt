@@ -269,7 +269,7 @@ fn format_recursive(
 
 /// A fast beancount file formatter with CJK support.
 #[pymodule]
-fn husk(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn beanfmt(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", VERSION)?;
     m.add_class::<PyOptions>()?;
     m.add_function(wrap_pyfunction!(format, m)?)?;

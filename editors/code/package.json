@@ -1,12 +1,12 @@
 {
-  "name": "husk-beancount-formatter",
-  "displayName": "Husk Beancount Formatter",
-  "description": "Fast beancount file formatter with CJK support, powered by husk",
+  "name": "beanfmt",
+  "displayName": "Beanfmt",
+  "description": "Fast beancount file formatter with CJK support",
   "version": "0.1.0",
   "engines": {
     "vscode": "^1.75.0"
   },
-  "publisher": "husk",
+  "publisher": "beanfmt",
   "license": "MIT",
   "categories": [
     "Formatters",
@@ -18,28 +18,28 @@
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "title": "Husk Beancount Formatter",
+      "title": "Beanfmt",
       "properties": {
-        "husk.indent": {
+        "beanfmt.indent": {
           "type": "string",
           "default": "    ",
           "description": "Indentation string for postings and metadata."
         },
-        "husk.currencyColumn": {
+        "beanfmt.currencyColumn": {
           "type": "number",
           "default": 70,
           "minimum": 1,
           "maximum": 200,
           "description": "Column to align currencies to."
         },
-        "husk.costColumn": {
+        "beanfmt.costColumn": {
           "type": "number",
           "default": 75,
           "minimum": 1,
           "maximum": 200,
           "description": "Column to align costs/prices to."
         },
-        "husk.thousandsSeparator": {
+        "beanfmt.thousandsSeparator": {
           "type": "string",
           "enum": [
             "keep",
@@ -49,17 +49,17 @@
           "default": "keep",
           "description": "Thousands separator handling: keep as-is, add commas, or remove them."
         },
-        "husk.spacesInBraces": {
+        "beanfmt.spacesInBraces": {
           "type": "boolean",
           "default": false,
           "description": "Add spaces inside cost braces, e.g. { 100 USD } instead of {100 USD}."
         },
-        "husk.fixedCJKWidth": {
+        "beanfmt.fixedCJKWidth": {
           "type": "boolean",
           "default": true,
           "description": "Treat CJK (East Asian) characters as double-width for alignment."
         },
-        "husk.sort": {
+        "beanfmt.sort": {
           "type": "boolean",
           "default": false,
           "description": "Sort entries by date."

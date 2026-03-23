@@ -1,5 +1,5 @@
-use husk::format;
-use husk::options::{Options, ThousandsSeparator};
+use beanfmt::format;
+use beanfmt::options::{Options, ThousandsSeparator};
 
 fn default_opts() -> Options {
     Options::default()
@@ -275,7 +275,7 @@ fn format_cjk_fixture() {
         if line.contains("CNY") && line.starts_with("    ") {
             let cny_start = line.find("CNY").unwrap();
             let before = &line[..cny_start];
-            let width = husk::align::display_width(before, true);
+            let width = beanfmt::align::display_width(before, true);
             // currency_column is 1-indexed, so 0-indexed position is column - 1
             assert_eq!(width, 49, "CJK line not aligned: {}", line);
         }

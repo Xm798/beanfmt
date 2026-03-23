@@ -1,12 +1,12 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import type * as HuskWasm from "*/wasm";
+import type * as BeanfmtWasm from "*/wasm";
 
-let wasmModule: typeof HuskWasm | undefined;
+let wasmModule: typeof BeanfmtWasm | undefined;
 
 async function loadWasm(
   context: vscode.ExtensionContext,
-): Promise<typeof HuskWasm> {
+): Promise<typeof BeanfmtWasm> {
   if (wasmModule) return wasmModule;
   const wasmPath = path.join(context.extensionPath, "wasm");
   wasmModule = await import(wasmPath);
@@ -20,11 +20,11 @@ function clamp(value: number, min: number, max: number): number {
 export async function activate(
   context: vscode.ExtensionContext,
 ): Promise<void> {
-  console.log("[husk] activated");
+  console.log("[beanfmt] activated");
 
   // Preload WASM module to avoid blocking extension host on first format
   loadWasm(context).catch((err) => {
-    console.error("[husk] failed to preload WASM:", err);
+    console.error("[beanfmt] failed to preload WASM:", err);
   });
 
   const disposable = vscode.languages.registerDocumentFormattingEditProvider(
@@ -33,7 +33,7 @@ export async function activate(
       async provideDocumentFormattingEdits(
         document: vscode.TextDocument,
       ): Promise<vscode.TextEdit[]> {
-        const config = vscode.workspace.getConfiguration("husk");
+        const config = vscode.workspace.getConfiguration("beanfmt");
         const indent = config.get<string>("indent", "    ").slice(0, 20);
         const currencyColumn = clamp(
           config.get<number>("currencyColumn", 70),
@@ -79,7 +79,7 @@ export async function activate(
           return [vscode.TextEdit.replace(fullRange, result)];
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          vscode.window.showErrorMessage(`Husk format error: ${message}`);
+          vscode.window.showErrorMessage(`Beanfmt error: ${message}`);
           return [];
         }
       },
@@ -90,5 +90,5 @@ export async function activate(
 }
 
 export function deactivate(): void {
-  console.log("[husk] deactivated");
+  console.log("[beanfmt] deactivated");
 }

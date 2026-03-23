@@ -1,5 +1,5 @@
 [package]
-name = "husk"
+name = "beanfmt"
 version = "0.1.0"
 edition = "2024"
 description = "A fast beancount file formatter with CJK support"
@@ -11,12 +11,12 @@ license = "MIT"
 wasm-opt = false
 
 [lib]
-name = "husk"
+name = "beanfmt"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "husk"
+name = "beanfmt"
 path = "src/cli/main.rs"
 required-features = ["cli"]
 

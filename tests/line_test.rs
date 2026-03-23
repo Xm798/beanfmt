@@ -1,4 +1,4 @@
-use husk::line::{parse_line, BlockKind, Line};
+use beanfmt::line::{parse_line, BlockKind, Line};
 
 #[test]
 fn blank_line_empty() {

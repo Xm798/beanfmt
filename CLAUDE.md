@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Husk is a fast beancount file formatter with CJK double-width character support. It provides a Rust library, CLI binary, Python bindings (via PyO3/maturin, managed by uv), and WASM bindings (via wasm-bindgen). The VSCode extension uses bun for Node package management.
+Beanfmt is a fast beancount file formatter with CJK double-width character support. It provides a Rust library, CLI binary, Python bindings (via PyO3/maturin, managed by uv), and WASM bindings (via wasm-bindgen). The VSCode extension uses bun for Node package management.
 
 ## Build & Test Commands
 
