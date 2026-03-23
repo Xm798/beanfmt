@@ -9,20 +9,38 @@ struct Entry {
     time: Option<String>,
 }
 
-static TIME_HM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{2}):(\d{2})$").unwrap());
+static TIME_HM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{1,2}):(\d{2})$").unwrap());
 
 static TIME_HMS_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\d{2}):(\d{2}):(\d{2})$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(\d{1,2}):(\d{2}):(\d{2})$").unwrap());
+
+static ISO_DATETIME_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\d{4}-\d{2}-\d{2}[T ](\d{1,2}):(\d{2})(?::(\d{2}))?").unwrap());
 
 static UNIX_TS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{10,16})$").unwrap());
 
 pub fn parse_time(value: &str) -> Option<String> {
     let value = value.trim().trim_matches('"');
     if let Some(caps) = TIME_HMS_RE.captures(value) {
-        return Some(format!("{}:{}:{}", &caps[1], &caps[2], &caps[3]));
+        return Some(format!(
+            "{:02}:{}:{}",
+            caps[1].parse::<u32>().ok()?,
+            &caps[2],
+            &caps[3]
+        ));
     }
     if let Some(caps) = TIME_HM_RE.captures(value) {
-        return Some(format!("{}:{}:00", &caps[1], &caps[2]));
+        return Some(format!(
+            "{:02}:{}:00",
+            caps[1].parse::<u32>().ok()?,
+            &caps[2]
+        ));
+    }
+    if let Some(caps) = ISO_DATETIME_RE.captures(value) {
+        let h: u32 = caps[1].parse().ok()?;
+        let m = &caps[2];
+        let s = caps.get(3).map_or("00", |c| c.as_str());
+        return Some(format!("{h:02}:{m}:{s}"));
     }
     if let Some(caps) = UNIX_TS_RE.captures(value) {
         let digits: u64 = caps[1].parse().ok()?;

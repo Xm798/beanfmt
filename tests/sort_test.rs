@@ -218,6 +218,30 @@ fn parse_time_invalid() {
     assert_eq!(parse_time(""), None);
 }
 
+#[test]
+fn parse_time_single_digit_hour() {
+    assert_eq!(parse_time("9:30"), Some("09:30:00".into()));
+    assert_eq!(parse_time("9:30:45"), Some("09:30:45".into()));
+}
+
+#[test]
+fn parse_time_iso_datetime() {
+    assert_eq!(parse_time("2024-01-01T09:30:45"), Some("09:30:45".into()));
+    assert_eq!(parse_time("2024-01-01T09:30"), Some("09:30:00".into()));
+    assert_eq!(parse_time("2024-01-01 14:00:00"), Some("14:00:00".into()));
+    assert_eq!(parse_time("2024-01-01T9:05"), Some("09:05:00".into()));
+    // Lenient: timezone and fractional seconds are ignored
+    assert_eq!(parse_time("2024-01-01T09:30:45Z"), Some("09:30:45".into()));
+    assert_eq!(
+        parse_time("2024-01-01T09:30:45+08:00"),
+        Some("09:30:45".into())
+    );
+    assert_eq!(
+        parse_time("2024-01-01T09:30:45.123"),
+        Some("09:30:45".into())
+    );
+}
+
 // LIS sort edge-case tests
 
 #[test]
