@@ -1,0 +1,96 @@
+{
+  "name": "husk-beancount-formatter",
+  "displayName": "Husk Beancount Formatter",
+  "description": "Fast beancount file formatter with CJK support, powered by husk",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "publisher": "husk",
+  "license": "MIT",
+  "categories": [
+    "Formatters",
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:beancount"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Husk Beancount Formatter",
+      "properties": {
+        "husk.indent": {
+          "type": "string",
+          "default": "    ",
+          "description": "Indentation string for postings and metadata."
+        },
+        "husk.currencyColumn": {
+          "type": "number",
+          "default": 70,
+          "minimum": 1,
+          "maximum": 200,
+          "description": "Column to align currencies to."
+        },
+        "husk.costColumn": {
+          "type": "number",
+          "default": 75,
+          "minimum": 1,
+          "maximum": 200,
+          "description": "Column to align costs/prices to."
+        },
+        "husk.thousandsSeparator": {
+          "type": "string",
+          "enum": [
+            "keep",
+            "add",
+            "remove"
+          ],
+          "default": "keep",
+          "description": "Thousands separator handling: keep as-is, add commas, or remove them."
+        },
+        "husk.spacesInBraces": {
+          "type": "boolean",
+          "default": false,
+          "description": "Add spaces inside cost braces, e.g. { 100 USD } instead of {100 USD}."
+        },
+        "husk.fixedCJKWidth": {
+          "type": "boolean",
+          "default": true,
+          "description": "Treat CJK (East Asian) characters as double-width for alignment."
+        },
+        "husk.sort": {
+          "type": "boolean",
+          "default": false,
+          "description": "Sort entries by date."
+        }
+      }
+    },
+    "languages": [
+      {
+        "id": "beancount",
+        "aliases": [
+          "Beancount",
+          "beancount"
+        ],
+        "extensions": [
+          ".bean",
+          ".beancount"
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build:wasm && npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "build:wasm": "cd ../.. && wasm-pack build --target nodejs --out-dir editors/code/wasm --features wasm --no-default-features",
+    "package": "npx @vscode/vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^5.0.0",
+    "@vscode/vsce": "^3.0.0"
+  }
+}

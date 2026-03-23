@@ -5,6 +5,11 @@ edition = "2024"
 description = "A fast beancount file formatter with CJK support"
 license = "MIT"
 
+[package.metadata.wasm-pack.profile.release]
+# Disabled: bundled wasm-opt lacks bulk-memory support required by Rust 2024 edition.
+# Re-enable after upgrading wasm-pack or installing system binaryen.
+wasm-opt = false
+
 [lib]
 name = "husk"
 path = "src/lib.rs"

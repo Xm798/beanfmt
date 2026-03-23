@@ -1,0 +1,9 @@
+src/**
+node_modules/**
+tsconfig.json
+.gitignore
+**/*.ts
+**/*.map
+wasm/.gitignore
+wasm/README.md
+*.vsix
