@@ -4,10 +4,7 @@ use std::fs;
 use tempfile::TempDir;
 
 fn default_options() -> Options {
-    Options {
-        recursive: true,
-        ..Options::default()
-    }
+    Options::default()
 }
 
 #[test]
@@ -71,4 +68,32 @@ fn missing_include_skipped() {
 
     assert_eq!(results.len(), 1, "only the existing file is formatted");
     assert_eq!(results[0].path, fs::canonicalize(&main_path).unwrap());
+}
+
+#[test]
+fn follows_glob_includes() {
+    let dir = TempDir::new().unwrap();
+    let sub = dir.path().join("accounts");
+    fs::create_dir(&sub).unwrap();
+    let main_path = dir.path().join("main.beancount");
+
+    fs::write(
+        &main_path,
+        "include \"accounts/*.beancount\"\n\n2024-01-01 open Assets:Bank\n",
+    )
+    .unwrap();
+    fs::write(
+        sub.join("a.beancount"),
+        "2024-01-01 open Assets:A\n",
+    )
+    .unwrap();
+    fs::write(
+        sub.join("b.beancount"),
+        "2024-01-01 open Assets:B\n",
+    )
+    .unwrap();
+
+    let results = format_recursive(&main_path, &default_options());
+
+    assert_eq!(results.len(), 3, "should format main + 2 glob matches");
 }

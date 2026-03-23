@@ -2,8 +2,9 @@ use crate::options::ThousandsSeparator;
 use regex::Regex;
 use std::sync::LazyLock;
 
+// \s* consumes all whitespace so normalize_comment can re-emit exactly one space
 static COMMENT_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\s*)(;;?)\s*(.*)$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(\s*)(;;?)\s*(.*?)\s*$").unwrap());
 
 /// Replace leading whitespace with the configured indent string.
 /// Indent depth is determined by dividing leading space count by base width (default 4),
@@ -138,5 +139,5 @@ pub fn normalize_braces(s: &str, spaces_in_braces: bool) -> String {
     });
 
     // Restore double braces
-    result.replace(OPEN_PH, "{{").replace(CLOSE_PH, "}}").to_string()
+    result.replace(OPEN_PH, "{{").replace(CLOSE_PH, "}}")
 }

@@ -93,6 +93,13 @@ fn close_passthrough() {
 }
 
 #[test]
+fn posting_no_amount_with_comment() {
+    let input = "2024-01-01 * \"Test\"\n  Assets:Bank ; reconciled\n";
+    let result = format(input, &default_opts());
+    assert!(result.contains("; reconciled"), "comment on no-amount posting should be preserved: {}", result);
+}
+
+#[test]
 fn comment_normalization() {
     let input = ";   hello world\n";
     let result = format(input, &default_opts());
@@ -288,6 +295,28 @@ fn format_normalize_fixture() {
     assert!(result.contains(";; narration with extra spaces"), "Narration should be normalized");
     assert!(result.contains("1,234,567.89"), "Thousands should be added");
     assert!(result.contains("{ 150 USD }"), "Braces should have spaces");
+}
+
+#[test]
+fn format_idempotent() {
+    let input = "\
+2024-01-15 * \"Grocery Store\" \"Weekly shopping\"
+  Expenses:Food     50.00 USD
+  Assets:Bank      -50.00 USD
+
+2024-01-16 balance Assets:Bank  1000.00 USD
+
+2024-01-01 open Assets:Bank  USD
+
+; A section comment
+2024-02-01 * \"Restaurant\"
+  Expenses:Food:DiningOut    35.50 USD
+  Assets:CreditCard
+";
+    let opts = Options::default();
+    let once = format(input, &opts);
+    let twice = format(&once, &opts);
+    assert_eq!(once, twice, "formatting should be idempotent");
 }
 
 #[test]

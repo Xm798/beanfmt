@@ -46,7 +46,10 @@ pub fn format_recursive(root_path: &Path, options: &Options) -> Vec<FormattedFil
 
     let root = match fs::canonicalize(root_path) {
         Ok(p) => p,
-        Err(_) => return results,
+        Err(e) => {
+            eprintln!("warning: cannot resolve {}: {e}", root_path.display());
+            return results;
+        }
     };
 
     queue.push_back(root.clone());
@@ -55,7 +58,10 @@ pub fn format_recursive(root_path: &Path, options: &Options) -> Vec<FormattedFil
     while let Some(path) = queue.pop_front() {
         let raw = match fs::read_to_string(&path) {
             Ok(s) => s,
-            Err(_) => continue,
+            Err(e) => {
+                eprintln!("warning: skipping {}: {e}", path.display());
+                continue;
+            }
         };
 
         let formatted = crate::format(&raw, options);

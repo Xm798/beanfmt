@@ -60,6 +60,11 @@ pub enum Line<'a> {
         kind: BlockKind,
         rest: &'a str,
     },
+    DateDirective {
+        date: &'a str,
+        keyword: &'a str,
+        rest: &'a str,
+    },
     Include {
         path: &'a str,
     },
@@ -69,7 +74,7 @@ pub enum Line<'a> {
 
 const DATE: &str = r"\d{4}-\d{2}-\d{2}";
 const ACCOUNT: &str = r"[A-Z\p{Lu}][\w-]*(?::[\w\p{L}-]+)+";
-const NUMBER: &str = r"-?[\d,]+(?:\.\d+)?";
+const NUMBER: &str = r"-?\d[\d,]*(?:\.\d+)?";
 const CURRENCY: &str = r"[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]";
 
 static TRANSACTION_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -119,6 +124,7 @@ static META_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(\s+)([\w-]+)\s*:\s*(.*?)\s*$").unwrap()
 });
 
+// \s? consumes at most one space — preserves original spacing in content field for parsing
 static COMMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(\s*)(;;?)\s?(.*?)\s*$").unwrap()
 });
@@ -127,16 +133,19 @@ static BLOCK_DIRECTIVE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(pushtag|poptag|pushmeta|popmeta)\s+(.*?)\s*$").unwrap()
 });
 
+static DATE_DIRECTIVE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(&format!(
+        r"^({DATE})\s+(note|document|pad|event|custom|query|commodity)\s+(.*?)\s*$"
+    ))
+    .unwrap()
+});
+
 static INCLUDE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r#"^include\s+"(.*?)"\s*$"#).unwrap()
 });
 
-static BLANK_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^\s*$").unwrap()
-});
-
 pub fn parse_line(line: &str) -> Line<'_> {
-    if BLANK_RE.is_match(line) {
+    if line.trim().is_empty() {
         return Line::BlankLine;
     }
 
@@ -220,6 +229,14 @@ pub fn parse_line(line: &str) -> Line<'_> {
         return Line::BlockDirective {
             kind,
             rest: caps.get(2).unwrap().as_str(),
+        };
+    }
+
+    if let Some(caps) = DATE_DIRECTIVE_RE.captures(line) {
+        return Line::DateDirective {
+            date: caps.get(1).unwrap().as_str(),
+            keyword: caps.get(2).unwrap().as_str(),
+            rest: caps.get(3).unwrap().as_str(),
         };
     }
 

@@ -2,6 +2,14 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::options::Options;
 
+fn compute_padding(target_column: usize, content_width: usize, min_gap: usize) -> usize {
+    if target_column > content_width + min_gap {
+        target_column - 1 - content_width
+    } else {
+        min_gap
+    }
+}
+
 /// Calculate display width of a string, accounting for CJK double-width characters.
 pub fn display_width(s: &str, fixed_cjk_width: bool) -> usize {
     if fixed_cjk_width {
@@ -39,7 +47,10 @@ pub fn align_posting(
 
     // Account-only posting (no amount)
     let (Some(number), Some(currency)) = (number, currency) else {
-        return format!("{indent}{account}");
+        return match comment {
+            Some(c) => format!("{indent}{account} {c}"),
+            None => format!("{indent}{account}"),
+        };
     };
 
     let prefix_width = display_width(indent, cjk) + display_width(account, cjk);
@@ -49,23 +60,15 @@ pub fn align_posting(
     // display_width before currency = prefix_width + padding + num_width + 1 (space)
     // We want that to equal currency_column - 1 (0-indexed position).
     // padding = currency_column - 1 - prefix_width - num_width - 1
-    let min_before = prefix_width + num_width + 1; // with 0 padding
-    let padding = if options.currency_column > min_before + 2 {
-        options.currency_column - 1 - min_before
-    } else {
-        2 // minimum 2 spaces between account and number
-    };
+    let min_before = prefix_width + num_width + 1;
+    let padding = compute_padding(options.currency_column, min_before, 2);
 
     let mut result = format!("{indent}{account}{:padding$}{number} {currency}", "");
 
     // Align cost to cost_column if present
     if let Some(cost) = cost {
         let current_width = display_width(&result, cjk);
-        let cost_padding = if options.cost_column > current_width + 2 {
-            options.cost_column - 1 - current_width - 1
-        } else {
-            1
-        };
+        let cost_padding = compute_padding(options.cost_column, current_width + 1, 1);
         result = format!("{result}{:cost_padding$} {cost}", "");
     }
 
@@ -94,11 +97,7 @@ pub fn align_balance(
     let num_width = display_width(number, cjk);
 
     let min_before = prefix_width + num_width + 1;
-    let padding = if options.currency_column > min_before + 2 {
-        options.currency_column - 1 - min_before
-    } else {
-        2
-    };
+    let padding = compute_padding(options.currency_column, min_before, 2);
 
     format!("{prefix}{:padding$}{number} {currency}", "")
 }
@@ -118,11 +117,7 @@ pub fn align_open(
     let prefix = format!("{date} open {account}");
     let prefix_width = display_width(&prefix, cjk);
 
-    let padding = if options.currency_column > prefix_width + 2 {
-        options.currency_column - 1 - prefix_width
-    } else {
-        2
-    };
+    let padding = compute_padding(options.currency_column, prefix_width, 2);
 
     format!("{prefix}{:padding$}{currencies}", "")
 }
@@ -141,11 +136,7 @@ pub fn align_price(
     let num_width = display_width(number, cjk);
 
     let min_before = prefix_width + num_width + 1;
-    let padding = if options.currency_column > min_before + 2 {
-        options.currency_column - 1 - min_before
-    } else {
-        2
-    };
+    let padding = compute_padding(options.currency_column, min_before, 2);
 
     format!("{prefix}{:padding$}{number} {currency}", "")
 }

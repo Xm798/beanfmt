@@ -127,3 +127,53 @@ fn braces_empty_unchanged() {
 fn braces_total_cost_double() {
     assert_eq!(normalize_braces("{{100 USD}}", true), "{{ 100 USD }}");
 }
+
+// normalize_thousands boundary tests
+
+#[test]
+fn thousands_add_exactly_four_digits() {
+    assert_eq!(
+        normalize_thousands("1000", &ThousandsSeparator::Add),
+        "1,000"
+    );
+}
+
+#[test]
+fn thousands_add_six_digits() {
+    assert_eq!(
+        normalize_thousands("123456", &ThousandsSeparator::Add),
+        "123,456"
+    );
+}
+
+#[test]
+fn thousands_add_positive_sign() {
+    assert_eq!(
+        normalize_thousands("+50000", &ThousandsSeparator::Add),
+        "+50,000"
+    );
+}
+
+#[test]
+fn thousands_add_integer_no_decimal() {
+    assert_eq!(
+        normalize_thousands("1234567", &ThousandsSeparator::Add),
+        "1,234,567"
+    );
+}
+
+#[test]
+fn thousands_add_zero() {
+    assert_eq!(
+        normalize_thousands("0", &ThousandsSeparator::Add),
+        "0"
+    );
+}
+
+#[test]
+fn thousands_add_existing_wrong_commas() {
+    assert_eq!(
+        normalize_thousands("12,34,567.89", &ThousandsSeparator::Add),
+        "1,234,567.89"
+    );
+}

@@ -3,10 +3,10 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone)]
-pub struct Entry {
-    pub lines: Vec<String>,
-    pub date: Option<String>,
-    pub time: Option<String>,
+struct Entry {
+    lines: Vec<String>,
+    date: Option<String>,
+    time: Option<String>,
 }
 
 static TIME_HM_RE: LazyLock<Regex> =
@@ -29,9 +29,9 @@ pub fn parse_time(value: &str) -> Option<String> {
     if let Some(caps) = UNIX_TS_RE.captures(value) {
         let digits: u64 = caps[1].parse().ok()?;
         // Check micros before millis
-        let secs = if digits > 1_000_000_000_000_000 {
+        let secs = if digits >= 1_000_000_000_000_000 {
             digits / 1_000_000
-        } else if digits > 1_000_000_000_000 {
+        } else if digits >= 1_000_000_000_000 {
             digits / 1_000
         } else {
             digits
@@ -59,7 +59,8 @@ fn extract_date(line: &Line) -> Option<String> {
         | Line::Balance { date, .. }
         | Line::Open { date, .. }
         | Line::Close { date, .. }
-        | Line::Price { date, .. } => Some(date.to_string()),
+        | Line::Price { date, .. }
+        | Line::DateDirective { date, .. } => Some(date.to_string()),
         _ => None,
     }
 }
@@ -139,10 +140,10 @@ fn parse_segments(input: &str) -> Vec<Segment> {
     segments
 }
 
-fn sort_key(entry: &Entry) -> (String, String) {
+fn sort_key(entry: &Entry) -> (&str, &str) {
     (
-        entry.date.clone().unwrap_or_default(),
-        entry.time.clone().unwrap_or_default(),
+        entry.date.as_deref().unwrap_or(""),
+        entry.time.as_deref().unwrap_or(""),
     )
 }
 
