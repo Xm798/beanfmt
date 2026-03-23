@@ -81,11 +81,11 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build:wasm && npm run compile",
+    "vscode:prepublish": "bun run build:wasm && bun run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "build:wasm": "cd ../.. && wasm-pack build --target nodejs --out-dir editors/code/wasm --features wasm --no-default-features",
-    "package": "npx @vscode/vsce package"
+    "package": "bunx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

@@ -4,39 +4,27 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Husk is a fast beancount file formatter with CJK double-width character support. It provides a Rust library, CLI binary, Python bindings (via PyO3/maturin), and WASM bindings (via wasm-bindgen).
+Husk is a fast beancount file formatter with CJK double-width character support. It provides a Rust library, CLI binary, Python bindings (via PyO3/maturin, managed by uv), and WASM bindings (via wasm-bindgen). The VSCode extension uses bun for Node package management.
 
 ## Build & Test Commands
 
+All commands are available via `just` (see `justfile` for details):
+
 ```bash
-# Build (library only, no feature flags)
-cargo build
-
-# Build CLI (default feature)
-cargo build                     # cli feature is default
-cargo build --features cli      # explicit
-
-# Build Python extension
-maturin develop --features python
-
-# Build WASM
-cargo build --features wasm --target wasm32-unknown-unknown
-
-# Run all tests
-cargo test
-
-# Run a single test file
-cargo test --test align_test
-cargo test --test integration_test
-
-# Run a specific test by name
-cargo test test_name_substring
-
-# Clippy
-cargo clippy --all-targets --all-features
-
-# Format check
-cargo fmt -- --check
+just                    # List all available recipes
+just build              # Build library
+just build-cli          # Build CLI binary
+just build-python       # Build Python extension (uv + maturin)
+just build-wasm         # Build WASM module
+just build-vscode       # Build VSCode extension (WASM + TypeScript)
+just package-vscode     # Package .vsix
+just test               # Run all tests
+just test-file name     # Run a specific test file
+just clippy             # Run clippy lints
+just fmt                # Format code
+just fmt-check          # Check formatting
+just check              # Run all checks (fmt, clippy, test)
+just clean              # Clean build artifacts
 ```
 
 ## Architecture
