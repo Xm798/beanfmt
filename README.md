@@ -72,15 +72,39 @@ beanfmt --thousands add --sort ledger.beancount
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--indent <STR>` | 4 spaces | Indentation string for postings and metadata |
+| `--indent <N>` | `4` | Number of spaces for indentation |
 | `--currency-column <N>` | `70` | Target column for currency alignment |
 | `--cost-column <N>` | `75` | Target column for cost/price alignment |
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
-| `--spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
-| `--no-fixed-cjk-width` | off | Disable CJK double-width alignment |
-| `--sort` | off | Sort entries by date |
+| `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
+| `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
+| `--sort` / `--no-sort` | off | Sort entries by date |
 | `--recursive` | off | Follow and format `include`d files |
 | `-w, --write` | off | Write output back to file (in-place) |
+| `--no-config` | off | Skip loading configuration files |
+
+### Configuration File
+
+Beanfmt supports TOML configuration files with a three-layer merge priority (low → high):
+
+1. Built-in defaults
+2. Global config: `$XDG_CONFIG_HOME/beanfmt/config.toml` (defaults to `~/.config/beanfmt/config.toml`)
+3. Project config: `.beanfmt.toml` or `beanfmt.toml` (searched upward from the current directory)
+4. CLI arguments (highest priority)
+
+Example `.beanfmt.toml`:
+
+```toml
+indent = 2
+currency_column = 60
+cost_column = 65
+thousands = "add"
+spaces_in_braces = true
+fixed_cjk_width = true
+sort = false
+```
+
+All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading.
 
 ### Python
 
@@ -110,7 +134,7 @@ import { format, format_default } from "beanfmt";
 const output = format_default(source);
 
 // Format with full options
-const output = format(source, "    ", 70, 75, "keep", false, true, false);
+const output = format(source, 4, 70, 75, "keep", false, true, false);
 ```
 
 ### VSCode

@@ -70,15 +70,39 @@ beanfmt --thousands add --sort ledger.beancount
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--indent <STR>` | 4 个空格 | 过账和元数据的缩进字符串 |
+| `--indent <N>` | `4` | 缩进空格数 |
 | `--currency-column <N>` | `70` | 货币对齐目标列 |
 | `--cost-column <N>` | `75` | 成本/价格对齐目标列 |
 | `--thousands <MODE>` | `keep` | 千分位分隔符：`add`（添加）、`remove`（移除）、`keep`（保持） |
-| `--spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
-| `--no-fixed-cjk-width` | 关闭 | 禁用 CJK 双宽度对齐 |
-| `--sort` | 关闭 | 按日期排序条目 |
+| `--spaces-in-braces` / `--no-spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
+| `--fixed-cjk-width` / `--no-fixed-cjk-width` | 开启 | CJK 双宽度字符对齐 |
+| `--sort` / `--no-sort` | 关闭 | 按日期排序条目 |
 | `--recursive` | 关闭 | 递归格式化 `include` 引入的文件 |
 | `-w, --write` | 关闭 | 将输出写回文件（原地修改） |
+| `--no-config` | 关闭 | 跳过配置文件加载 |
+
+### 配置文件
+
+Beanfmt 支持 TOML 配置文件，按以下优先级合并（低 → 高）：
+
+1. 内置默认值
+2. 全局配置：`$XDG_CONFIG_HOME/beanfmt/config.toml`（默认为 `~/.config/beanfmt/config.toml`）
+3. 项目配置：`.beanfmt.toml` 或 `beanfmt.toml`（从当前目录向上查找）
+4. CLI 参数（最高优先级）
+
+示例 `.beanfmt.toml`：
+
+```toml
+indent = 2
+currency_column = 60
+cost_column = 65
+thousands = "add"
+spaces_in_braces = true
+fixed_cjk_width = true
+sort = false
+```
+
+所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。
 
 ### Python
 
@@ -108,7 +132,7 @@ import { format, format_default } from "beanfmt";
 const output = format_default(source);
 
 // 使用完整选项格式化
-const output = format(source, "    ", 70, 75, "keep", false, true, false);
+const output = format(source, 4, 70, 75, "keep", false, true, false);
 ```
 
 ### VSCode
