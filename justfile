@@ -36,7 +36,9 @@ test-file name:
 
 # Run clippy lints
 clippy:
-    cargo clippy --all-targets --all-features
+    cargo clippy --all-targets --features cli
+    cargo clippy --all-targets --features python
+    cargo clippy --all-targets --features wasm
 
 # Check formatting
 fmt-check:
