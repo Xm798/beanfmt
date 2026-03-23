@@ -2,6 +2,8 @@
 compile_error!("features \"python\" and \"wasm\" are mutually exclusive");
 
 pub mod align;
+#[cfg(feature = "cli")]
+pub mod config;
 pub mod line;
 pub mod normalize;
 pub mod options;
@@ -51,7 +53,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 let number = number.map(|n| normalize_thousands(n, &options.thousands_separator));
                 let cost = cost.map(|c| normalize_braces(c, options.spaces_in_braces));
                 align_posting(
-                    &options.indent,
+                    &options.indent_str(),
                     account,
                     number.as_deref(),
                     currency,
@@ -93,7 +95,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 value,
             } => {
                 let value = normalize_braces(value, options.spaces_in_braces);
-                format!("{}{key}: {value}", options.indent.repeat(meta_depth))
+                format!("{}{key}: {value}", options.indent_str().repeat(meta_depth))
             }
             Line::Comment { .. } => normalize_comment(raw_line),
             Line::DateDirective {
@@ -116,7 +118,7 @@ pub fn format(input: &str, options: &Options) -> String {
         let formatted = match parsed {
             Line::Posting { .. } | Line::MetaItem { .. } => formatted,
             Line::Comment { indent, .. } if !indent.is_empty() => {
-                normalize_indent(&formatted, &options.indent)
+                normalize_indent(&formatted, options.indent)
             }
             _ => formatted,
         };

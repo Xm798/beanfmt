@@ -5,26 +5,26 @@ use beanfmt::options::ThousandsSeparator;
 
 #[test]
 fn indent_posting_line() {
-    let result = normalize_indent("  Expenses:Food  100 USD", "    ");
+    let result = normalize_indent("  Expenses:Food  100 USD", 4);
     assert_eq!(result, "    Expenses:Food  100 USD");
 }
 
 #[test]
 fn indent_tab_indent() {
-    let result = normalize_indent("\tExpenses:Food  100 USD", "    ");
+    let result = normalize_indent("\tExpenses:Food  100 USD", 4);
     assert_eq!(result, "    Expenses:Food  100 USD");
 }
 
 #[test]
 fn indent_non_indented_passthrough() {
-    let result = normalize_indent("2024-01-01 open Assets:Bank", "    ");
+    let result = normalize_indent("2024-01-01 open Assets:Bank", 4);
     assert_eq!(result, "2024-01-01 open Assets:Bank");
 }
 
 #[test]
 fn indent_blank_passthrough() {
-    assert_eq!(normalize_indent("", "    "), "");
-    assert_eq!(normalize_indent("   ", "    "), "   ");
+    assert_eq!(normalize_indent("", 4), "");
+    assert_eq!(normalize_indent("   ", 4), "   ");
 }
 
 // normalize_comment tests

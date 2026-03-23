@@ -8,7 +8,7 @@ pub enum ThousandsSeparator {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
-    pub indent: String,
+    pub indent: usize,
     pub currency_column: usize,
     pub cost_column: usize,
     pub thousands_separator: ThousandsSeparator,
@@ -17,10 +17,16 @@ pub struct Options {
     pub sort: bool,
 }
 
+impl Options {
+    pub fn indent_str(&self) -> String {
+        " ".repeat(self.indent)
+    }
+}
+
 impl Default for Options {
     fn default() -> Self {
         Self {
-            indent: "    ".to_string(),
+            indent: 4,
             currency_column: 70,
             cost_column: 75,
             thousands_separator: ThousandsSeparator::Keep,

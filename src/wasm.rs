@@ -18,7 +18,7 @@ fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
 #[allow(clippy::too_many_arguments)]
 pub fn format(
     input: &str,
-    indent: &str,
+    indent: usize,
     currency_column: usize,
     cost_column: usize,
     thousands: &str,
@@ -27,7 +27,7 @@ pub fn format(
     sort: bool,
 ) -> Result<String, JsError> {
     let options = Options {
-        indent: indent.to_string(),
+        indent,
         currency_column,
         cost_column,
         thousands_separator: parse_thousands(thousands)?,

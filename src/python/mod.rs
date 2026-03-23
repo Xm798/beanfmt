@@ -17,7 +17,7 @@ fn parse_thousands(s: &str) -> PyResult<ThousandsSeparator> {
 }
 
 fn build_options(
-    indent: Option<String>,
+    indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
     thousands_separator: Option<String>,
@@ -61,7 +61,7 @@ impl PyOptions {
         sort = None,
     ))]
     fn new(
-        indent: Option<String>,
+        indent: Option<usize>,
         currency_column: Option<usize>,
         cost_column: Option<usize>,
         thousands_separator: Option<String>,
@@ -89,9 +89,9 @@ impl PyOptions {
             ThousandsSeparator::Keep => "keep",
         };
         format!(
-            "Options(indent='{}', currency_column={}, cost_column={}, \
+            "Options(indent={}, currency_column={}, cost_column={}, \
              thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={})",
-            o.indent.replace('\\', "\\\\").replace('\'', "\\'"),
+            o.indent,
             o.currency_column,
             o.cost_column,
             ts,
@@ -107,7 +107,7 @@ impl PyOptions {
 #[allow(clippy::too_many_arguments)]
 fn resolve_options(
     options: Option<&PyOptions>,
-    indent: Option<String>,
+    indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
     thousands_separator: Option<String>,
@@ -153,7 +153,7 @@ fn resolve_options(
 fn format(
     input: &str,
     options: Option<&PyOptions>,
-    indent: Option<String>,
+    indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
     thousands_separator: Option<String>,
@@ -191,7 +191,7 @@ fn format(
 fn format_file(
     path: &str,
     options: Option<&PyOptions>,
-    indent: Option<String>,
+    indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
     thousands_separator: Option<String>,
@@ -232,7 +232,7 @@ fn format_file(
 fn format_recursive(
     path: &str,
     options: Option<&PyOptions>,
-    indent: Option<String>,
+    indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
     thousands_separator: Option<String>,

@@ -27,7 +27,7 @@ required-features = ["cli"]
 
 [features]
 default = ["cli"]
-cli = ["dep:clap", "dep:glob"]
+cli = ["dep:clap", "dep:glob", "dep:serde", "dep:toml"]
 wasm = ["dep:wasm-bindgen"]
 python = ["dep:pyo3", "dep:glob"]
 
@@ -46,6 +46,15 @@ optional = true
 
 [dependencies.wasm-bindgen]
 version = "0.2"
+optional = true
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+optional = true
+
+[dependencies.toml]
+version = "0.9"
 optional = true
 
 [dependencies.pyo3]

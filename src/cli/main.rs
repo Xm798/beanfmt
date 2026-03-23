@@ -1,6 +1,6 @@
-use beanfmt::options::{Options, ThousandsSeparator};
+use beanfmt::config::FileConfig;
 use beanfmt::recursive::format_recursive;
-use clap::Parser;
+use clap::{ArgAction, Parser};
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;
@@ -13,33 +13,45 @@ struct Cli {
     #[arg(default_value = "-")]
     files: Vec<String>,
 
-    /// Indent string
-    #[arg(long, default_value = "    ")]
-    indent: String,
+    /// Number of spaces for indentation
+    #[arg(long)]
+    indent: Option<usize>,
 
     /// Column for currency alignment
-    #[arg(long, default_value_t = 70)]
-    currency_column: usize,
+    #[arg(long)]
+    currency_column: Option<usize>,
 
     /// Column for cost/price alignment
-    #[arg(long, default_value_t = 75)]
-    cost_column: usize,
+    #[arg(long)]
+    cost_column: Option<usize>,
 
-    /// Thousands separator handling
-    #[arg(long, value_enum, default_value_t = ThousandsSeparator::Keep)]
-    thousands: ThousandsSeparator,
+    /// Thousands separator handling (add, remove, keep)
+    #[arg(long)]
+    thousands: Option<String>,
 
     /// Add spaces inside cost braces
-    #[arg(long)]
+    #[arg(long, action = ArgAction::SetTrue, overrides_with = "no_spaces_in_braces")]
     spaces_in_braces: bool,
 
+    /// Disable spaces inside cost braces
+    #[arg(long = "no-spaces-in-braces", action = ArgAction::SetTrue, overrides_with = "spaces_in_braces", hide = true)]
+    no_spaces_in_braces: bool,
+
+    /// Enable CJK double-width alignment
+    #[arg(long, action = ArgAction::SetTrue, overrides_with = "no_fixed_cjk_width")]
+    fixed_cjk_width: bool,
+
     /// Disable CJK double-width alignment
-    #[arg(long)]
+    #[arg(long = "no-fixed-cjk-width", action = ArgAction::SetTrue, overrides_with = "fixed_cjk_width", hide = true)]
     no_fixed_cjk_width: bool,
 
     /// Sort entries by date
-    #[arg(long)]
+    #[arg(long, action = ArgAction::SetTrue, overrides_with = "no_sort")]
     sort: bool,
+
+    /// Disable sorting entries by date
+    #[arg(long = "no-sort", action = ArgAction::SetTrue, overrides_with = "sort", hide = true)]
+    no_sort: bool,
 
     /// Recursively format included files
     #[arg(long)]
@@ -48,20 +60,64 @@ struct Cli {
     /// Write output back to file (in-place)
     #[arg(short = 'w', long)]
     write: bool,
+
+    /// Skip loading configuration files
+    #[arg(long)]
+    no_config: bool,
+}
+
+impl Cli {
+    fn to_file_config(&self) -> FileConfig {
+        let spaces_in_braces = if self.spaces_in_braces {
+            Some(true)
+        } else if self.no_spaces_in_braces {
+            Some(false)
+        } else {
+            None
+        };
+
+        let fixed_cjk_width = if self.fixed_cjk_width {
+            Some(true)
+        } else if self.no_fixed_cjk_width {
+            Some(false)
+        } else {
+            None
+        };
+
+        let sort = if self.sort {
+            Some(true)
+        } else if self.no_sort {
+            Some(false)
+        } else {
+            None
+        };
+
+        FileConfig {
+            indent: self.indent,
+            currency_column: self.currency_column,
+            cost_column: self.cost_column,
+            thousands: self.thousands.clone(),
+            spaces_in_braces,
+            fixed_cjk_width,
+            sort,
+        }
+    }
 }
 
 fn main() {
     let cli = Cli::parse();
 
-    let options = Options {
-        indent: cli.indent.clone(),
-        currency_column: cli.currency_column,
-        cost_column: cli.cost_column,
-        thousands_separator: cli.thousands,
-        spaces_in_braces: cli.spaces_in_braces,
-        fixed_cjk_width: !cli.no_fixed_cjk_width,
-        sort: cli.sort,
+    let file_config = if cli.no_config {
+        FileConfig::default()
+    } else {
+        let global = beanfmt::config::load_global();
+        let cwd = std::env::current_dir().unwrap_or_default();
+        let project = beanfmt::config::find_project_config(&cwd);
+        global.merge(project)
     };
+
+    let cli_config = cli.to_file_config();
+    let options = file_config.merge(cli_config).into_options();
 
     for file in &cli.files {
         if file == "-" {

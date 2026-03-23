@@ -132,7 +132,7 @@ fn blank_lines_become_empty() {
 #[test]
 fn meta_item_uses_configured_indent() {
     let opts = Options {
-        indent: "  ".to_string(),
+        indent: 2,
         ..default_opts()
     };
     let input = "2024-01-01 * \"Test\"\n    filename: \"test.txt\"\n";

@@ -9,11 +9,10 @@ static COMMENT_RE: LazyLock<Regex> =
 /// Replace leading whitespace with the configured indent string.
 /// Indent depth is determined by dividing leading space count by base width (default 4),
 /// rounding up, with a minimum of 1.
-pub fn normalize_indent(line: &str, indent: &str) -> String {
+pub fn normalize_indent(line: &str, indent: usize) -> String {
     if line.is_empty() || !line.starts_with(|c: char| c.is_whitespace()) {
         return line.to_string();
     }
-    // Blank lines (only whitespace) pass through unchanged
     let trimmed = line.trim_start();
     if trimmed.is_empty() {
         return line.to_string();
@@ -22,15 +21,15 @@ pub fn normalize_indent(line: &str, indent: &str) -> String {
     let leading_len = line.len() - trimmed.len();
     let leading = &line[..leading_len];
 
-    // Count effective width: tabs count as base_width, spaces as 1
-    let base_width = if !indent.is_empty() { indent.len() } else { 4 };
+    let indent_str = " ".repeat(indent);
+    let base_width = if indent > 0 { indent } else { 4 };
     let effective: usize = leading
         .chars()
         .map(|c| if c == '\t' { base_width } else { 1 })
         .sum();
 
     let depth = effective.div_ceil(base_width).max(1);
-    format!("{}{}", indent.repeat(depth), trimmed)
+    format!("{}{}", indent_str.repeat(depth), trimmed)
 }
 
 /// Normalize comment spacing: exactly one space after semicolons, no trailing space if empty.
