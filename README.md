@@ -152,7 +152,7 @@ Available settings:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `beanfmt.indent` | `"    "` | Indentation string |
+| `beanfmt.indent` | `4` | Number of spaces for indentation |
 | `beanfmt.currencyColumn` | `70` | Currency alignment column |
 | `beanfmt.costColumn` | `75` | Cost/price alignment column |
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |

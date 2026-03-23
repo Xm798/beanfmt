@@ -150,7 +150,7 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 
 | 设置项 | 默认值 | 说明 |
 |--------|--------|------|
-| `beanfmt.indent` | `"    "` | 缩进字符串 |
+| `beanfmt.indent` | `4` | 缩进空格数 |
 | `beanfmt.currencyColumn` | `70` | 货币对齐列 |
 | `beanfmt.costColumn` | `75` | 成本/价格对齐列 |
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |

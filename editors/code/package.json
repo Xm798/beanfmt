@@ -2,7 +2,7 @@
   "name": "beanfmt",
   "displayName": "Beanfmt",
   "description": "Fast beancount file formatter with CJK support",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -25,9 +25,11 @@
       "title": "Beanfmt",
       "properties": {
         "beanfmt.indent": {
-          "type": "string",
-          "default": "    ",
-          "description": "Indentation string for postings and metadata."
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Number of spaces for indentation."
         },
         "beanfmt.currencyColumn": {
           "type": "number",

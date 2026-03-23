@@ -34,7 +34,7 @@ export async function activate(
         document: vscode.TextDocument,
       ): Promise<vscode.TextEdit[]> {
         const config = vscode.workspace.getConfiguration("beanfmt");
-        const indent = config.get<string>("indent", "    ").slice(0, 20);
+        const indent = clamp(config.get<number>("indent", 4), 1, 20);
         const currencyColumn = clamp(
           config.get<number>("currencyColumn", 70),
           1,
