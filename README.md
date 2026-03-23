@@ -15,39 +15,31 @@ A fast [beancount](https://beancount.github.io/) file formatter with CJK double-
 
 ## Installation
 
-### CLI (from source)
+### CLI
 
 ```bash
-cargo install --path .
+cargo install beanfmt
 ```
 
 ### Python
 
 ```bash
-pip install maturin
-maturin develop --features python
-```
-
-### WASM
-
-```bash
-wasm-pack build --target nodejs --features wasm --no-default-features
+pip install beanfmt
 ```
 
 ### VSCode Extension
 
+Search for `beanfmt` in the VSCode Marketplace, or install from the command line:
+
 ```bash
-cd editors/code
-npm install
-npm run build:wasm
-npm run compile
-npm run package
+code --install-extension beanfmt.beanfmt-beancount-formatter
 ```
 
-Install the generated `.vsix` file:
+### From Source
 
 ```bash
-code --install-extension editors/code/beanfmt-beancount-formatter-0.1.0.vsix
+cargo install --path .                 # CLI
+maturin develop --features python      # Python (requires maturin)
 ```
 
 > Note: `python` and `wasm` features are mutually exclusive.

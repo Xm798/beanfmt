@@ -13,39 +13,31 @@
 
 ## 安装
 
-### CLI（从源码）
+### CLI
 
 ```bash
-cargo install --path .
+cargo install beanfmt
 ```
 
 ### Python
 
 ```bash
-pip install maturin
-maturin develop --features python
-```
-
-### WASM
-
-```bash
-wasm-pack build --target nodejs --features wasm --no-default-features
+pip install beanfmt
 ```
 
 ### VSCode 扩展
 
+在 VSCode 扩展商店搜索 `beanfmt`，或通过命令行安装：
+
 ```bash
-cd editors/code
-npm install
-npm run build:wasm
-npm run compile
-npm run package
+code --install-extension beanfmt.beanfmt-beancount-formatter
 ```
 
-安装生成的 `.vsix` 文件：
+### 从源码构建
 
 ```bash
-code --install-extension editors/code/beanfmt-beancount-formatter-0.1.0.vsix
+cargo install --path .                 # CLI
+maturin develop --features python      # Python（需要 maturin）
 ```
 
 > 注意：`python` 和 `wasm` 特性互斥，不能同时启用。
