@@ -25,6 +25,7 @@ pub fn format(input: &str, options: &Options) -> String {
 
     // Step 2: Parse, normalize, and align each line
     let mut output_lines: Vec<String> = Vec::new();
+    let mut meta_depth: usize = 1;
 
     for raw_line in working.lines() {
         let parsed = parse_line(raw_line);
@@ -90,7 +91,7 @@ pub fn format(input: &str, options: &Options) -> String {
             }
             Line::MetaItem { indent: _, key, value } => {
                 let value = normalize_braces(value, options.spaces_in_braces);
-                format!("{}{key}: {value}", options.indent)
+                format!("{}{key}: {value}", options.indent.repeat(meta_depth))
             }
             Line::Comment { .. } => normalize_comment(raw_line),
             Line::DateDirective { date, keyword, rest } => {
@@ -113,6 +114,14 @@ pub fn format(input: &str, options: &Options) -> String {
             }
             _ => formatted,
         };
+
+        // Track context for metadata indent depth
+        match parsed {
+            Line::Posting { .. } => meta_depth = 2,
+            Line::TransactionHeader { .. } => meta_depth = 1,
+            Line::MetaItem { .. } | Line::Comment { .. } => {}
+            _ => meta_depth = 1,
+        }
 
         output_lines.push(formatted);
     }
