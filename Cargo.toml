@@ -4,6 +4,11 @@ version = "0.1.0"
 edition = "2024"
 description = "A fast beancount file formatter with CJK support"
 license = "MIT"
+repository = "https://github.com/Xm798/beanfmt"
+homepage = "https://github.com/Xm798/beanfmt"
+readme = "README.md"
+keywords = ["beancount", "formatter", "cjk", "accounting"]
+categories = ["command-line-utilities", "text-processing"]
 
 [package.metadata.wasm-pack.profile.release]
 # Disabled: bundled wasm-opt lacks bulk-memory support required by Rust 2024 edition.

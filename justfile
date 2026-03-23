@@ -12,7 +12,7 @@ build-cli:
 
 # Build Python extension via uv + maturin
 build-python:
-    uv run maturin develop --features python
+    uvx maturin develop --features python
 
 # Build WASM module
 build-wasm:
@@ -24,7 +24,7 @@ build-vscode: build-wasm
 
 # Package VSCode extension as .vsix
 package-vscode: build-vscode
-    cd editors/code && bunx @vscode/vsce package --allow-missing-repository
+    cd editors/code && bunx @vscode/vsce package
 
 # Run all tests
 test:
@@ -48,6 +48,22 @@ fmt:
 
 # Run all checks (fmt, clippy, test)
 check: fmt-check clippy test
+
+# Publish crate to crates.io
+publish-crate: check
+    cargo publish
+
+# Publish Python package to PyPI (set UV_PUBLISH_TOKEN)
+publish-python:
+    uvx maturin build --release --features python
+    uv publish target/wheels/*.whl
+
+# Publish VSCode extension to Marketplace
+publish-vscode: package-vscode
+    cd editors/code && bunx @vscode/vsce publish
+
+# Publish all packages
+publish-all: publish-crate publish-python publish-vscode
 
 # Clean build artifacts
 clean:

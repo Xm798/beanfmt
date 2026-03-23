@@ -6,8 +6,12 @@
   "engines": {
     "vscode": "^1.75.0"
   },
-  "publisher": "beanfmt",
+  "publisher": "cyrus-x",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Xm798/beanfmt"
+  },
   "categories": [
     "Formatters",
     "Programming Languages"
