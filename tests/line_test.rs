@@ -1,4 +1,4 @@
-use beanfmt::line::{parse_line, BlockKind, Line};
+use beanfmt::line::{BlockKind, Line, parse_line};
 
 #[test]
 fn blank_line_empty() {
@@ -348,11 +348,7 @@ fn posting_with_price_only_no_cost() {
 fn posting_with_total_cost() {
     let line = "    Assets:Stock  10 AAPL {{1500 USD}}";
     match parse_line(line) {
-        Line::Posting {
-            cost,
-            price,
-            ..
-        } => {
+        Line::Posting { cost, price, .. } => {
             assert_eq!(cost, Some("{{1500 USD}}"));
             assert_eq!(price, None);
         }
@@ -364,11 +360,7 @@ fn posting_with_total_cost() {
 fn posting_with_total_price() {
     let line = "    Assets:Stock  10 AAPL @@ 1550 USD";
     match parse_line(line) {
-        Line::Posting {
-            cost,
-            price,
-            ..
-        } => {
+        Line::Posting { cost, price, .. } => {
             assert_eq!(cost, None);
             assert_eq!(price, Some("@@ 1550 USD"));
         }
@@ -425,9 +417,7 @@ fn posting_negative_number() {
     let line = "    Expenses:Food  -50.00 USD";
     match parse_line(line) {
         Line::Posting {
-            number,
-            currency,
-            ..
+            number, currency, ..
         } => {
             assert_eq!(number, Some("-50.00"));
             assert_eq!(currency, Some("USD"));
@@ -441,9 +431,7 @@ fn posting_number_with_commas() {
     let line = "    Expenses:Food  1,234.56 USD";
     match parse_line(line) {
         Line::Posting {
-            number,
-            currency,
-            ..
+            number, currency, ..
         } => {
             assert_eq!(number, Some("1,234.56"));
             assert_eq!(currency, Some("USD"));
@@ -501,9 +489,14 @@ fn single_char_currency_rejected_by_currency_pattern() {
     // This means "10 X" won't parse as amount+currency in a posting.
     let line = "    Assets:Bank  10 X";
     match parse_line(line) {
-        Line::Posting { number, currency, .. } => {
+        Line::Posting {
+            number, currency, ..
+        } => {
             // If it matches as a posting, currency should be None since X is too short
-            assert_eq!(number, None, "Single char 'X' should not match CURRENCY; expected no amount capture");
+            assert_eq!(
+                number, None,
+                "Single char 'X' should not match CURRENCY; expected no amount capture"
+            );
             assert_eq!(currency, None);
         }
         other => {
@@ -556,7 +549,9 @@ fn cjk_account_posting() {
 fn posting_tab_indent() {
     let line = "\tExpenses:Food  50.00 USD";
     match parse_line(line) {
-        Line::Posting { indent, account, .. } => {
+        Line::Posting {
+            indent, account, ..
+        } => {
             assert_eq!(indent, "\t");
             assert_eq!(account, "Expenses:Food");
         }
@@ -613,13 +608,13 @@ fn posting_price_without_cost_has_correct_groups() {
     // indices must still be correct. Cost is group 5, price is group 6.
     let line = "    Assets:Stock  10 AAPL @ 155 USD";
     match parse_line(line) {
-        Line::Posting {
-            cost,
-            price,
-            ..
-        } => {
+        Line::Posting { cost, price, .. } => {
             assert_eq!(cost, None, "cost should be None when only price present");
-            assert_eq!(price, Some("@ 155 USD"), "price capture group must be correct");
+            assert_eq!(
+                price,
+                Some("@ 155 USD"),
+                "price capture group must be correct"
+            );
         }
         other => panic!("Expected Posting, got {:?}", other),
     }
@@ -630,11 +625,7 @@ fn posting_total_price_has_correct_groups() {
     // @@ is total price - verify the @@? alternation captures correctly
     let line = "    Assets:Stock  10 AAPL @@ 1550 USD";
     match parse_line(line) {
-        Line::Posting {
-            cost,
-            price,
-            ..
-        } => {
+        Line::Posting { cost, price, .. } => {
             assert_eq!(cost, None);
             assert_eq!(price, Some("@@ 1550 USD"));
         }
@@ -647,10 +638,7 @@ fn posting_cost_with_date() {
     // Beancount allows cost with date: {150 USD, 2024-01-01}
     let line = "    Assets:Stock  10 AAPL {150 USD, 2024-01-01}";
     match parse_line(line) {
-        Line::Posting {
-            cost,
-            ..
-        } => {
+        Line::Posting { cost, .. } => {
             assert_eq!(cost, Some("{150 USD, 2024-01-01}"));
         }
         other => panic!("Expected Posting, got {:?}", other),
@@ -699,10 +687,7 @@ fn two_char_currency_is_valid() {
     // Minimum 2 chars. "US" should match.
     let line = "    Expenses:Food  50.00 US";
     match parse_line(line) {
-        Line::Posting {
-            currency,
-            ..
-        } => {
+        Line::Posting { currency, .. } => {
             assert_eq!(currency, Some("US"));
         }
         other => panic!("Expected Posting, got {:?}", other),
@@ -714,10 +699,7 @@ fn currency_with_dots_and_dashes() {
     // Beancount allows currencies like "BTC.X" or "USD-2"
     let line = "    Expenses:Crypto  1.5 BTC.X";
     match parse_line(line) {
-        Line::Posting {
-            currency,
-            ..
-        } => {
+        Line::Posting { currency, .. } => {
             assert_eq!(currency, Some("BTC.X"));
         }
         other => panic!("Expected Posting, got {:?}", other),
@@ -728,10 +710,7 @@ fn currency_with_dots_and_dashes() {
 fn balance_with_negative_number() {
     let line = "2024-01-01 balance Assets:Bank -500.00 USD";
     match parse_line(line) {
-        Line::Balance {
-            number,
-            ..
-        } => {
+        Line::Balance { number, .. } => {
             assert_eq!(number, "-500.00");
         }
         other => panic!("Expected Balance, got {:?}", other),
@@ -797,14 +776,16 @@ fn indented_line_starting_with_lowercase_is_not_posting() {
     // "  expenses:food  50 USD" — lowercase start should NOT match ACCOUNT
     // because ACCOUNT requires [A-Z\p{Lu}] as first char
     let line = "  expenses:food  50 USD";
-    assert!(!matches!(parse_line(line), Line::Posting { .. }),
-        "Lowercase account should not match Posting");
+    assert!(
+        !matches!(parse_line(line), Line::Posting { .. }),
+        "Lowercase account should not match Posting"
+    );
 }
 
 #[test]
 fn meta_item_with_uppercase_key_like_account() {
     // "  Filename: test.txt" — starts with uppercase, has colon.
-    // ACCOUNT requires `:[\w\p{L}-]+` (second segment after colon). 
+    // ACCOUNT requires `:[\w\p{L}-]+` (second segment after colon).
     // "Filename" has no second colon segment, so it's MetaItem not Posting.
     let line = "  Filename: test.txt";
     match parse_line(line) {
@@ -820,7 +801,9 @@ fn meta_item_with_uppercase_key_like_account() {
 fn posting_with_three_level_account() {
     let line = "  Income:Salary:Bonus  -1000.00 USD";
     match parse_line(line) {
-        Line::Posting { account, number, .. } => {
+        Line::Posting {
+            account, number, ..
+        } => {
             assert_eq!(account, "Income:Salary:Bonus");
             assert_eq!(number, Some("-1000.00"));
         }
@@ -833,7 +816,9 @@ fn posting_number_starting_with_dot_does_not_match() {
     // ".50" should not match NUMBER pattern since it requires digits before optional dot
     let line = "  Expenses:Food  .50 USD";
     match parse_line(line) {
-        Line::Posting { number, currency, .. } => {
+        Line::Posting {
+            number, currency, ..
+        } => {
             // The number regex is -?[\d,]+(?:\.\d+)? which requires at least one digit before dot
             // So ".50 USD" won't match the number+currency group
             assert_eq!(number, None);
@@ -851,7 +836,11 @@ fn comment_semicolon_no_space() {
     // ";comment" with no space after semicolon
     let line = ";comment without space";
     match parse_line(line) {
-        Line::Comment { semicolons, content, .. } => {
+        Line::Comment {
+            semicolons,
+            content,
+            ..
+        } => {
             assert_eq!(semicolons, ";");
             // The regex is `(\s*)(;;?)\s?(.*?)\s*$` — the \s? makes space optional
             assert_eq!(content, "comment without space");
@@ -864,7 +853,11 @@ fn comment_semicolon_no_space() {
 fn empty_comment() {
     let line = ";";
     match parse_line(line) {
-        Line::Comment { semicolons, content, .. } => {
+        Line::Comment {
+            semicolons,
+            content,
+            ..
+        } => {
             assert_eq!(semicolons, ";");
             assert_eq!(content, "");
         }

@@ -77,12 +77,8 @@ const ACCOUNT: &str = r"[A-Z\p{Lu}][\w-]*(?::[\w\p{L}-]+)+";
 const NUMBER: &str = r"-?\d[\d,]*(?:\.\d+)?";
 const CURRENCY: &str = r"[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]";
 
-static TRANSACTION_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(&format!(
-        r"^({DATE})\s+(txn|tx|\*|!|T|X)\s*(.*?)\s*$"
-    ))
-    .unwrap()
-});
+static TRANSACTION_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(&format!(r"^({DATE})\s+(txn|tx|\*|!|T|X)\s*(.*?)\s*$")).unwrap());
 
 static POSTING_RE: LazyLock<Regex> = LazyLock::new(|| {
     let cost = r"(\{\{.*?\}\}|\{.*?\})";
@@ -106,12 +102,8 @@ static OPEN_RE: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-static CLOSE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(&format!(
-        r"^({DATE})\s+close\s+({ACCOUNT})\s*$"
-    ))
-    .unwrap()
-});
+static CLOSE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(&format!(r"^({DATE})\s+close\s+({ACCOUNT})\s*$")).unwrap());
 
 static PRICE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(
@@ -120,18 +112,15 @@ static PRICE_RE: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-static META_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(\s+)([\w-]+)\s*:\s*(.*?)\s*$").unwrap()
-});
+static META_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(\s+)([\w-]+)\s*:\s*(.*?)\s*$").unwrap());
 
 // \s? consumes at most one space — preserves original spacing in content field for parsing
-static COMMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(\s*)(;;?)\s?(.*?)\s*$").unwrap()
-});
+static COMMENT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(\s*)(;;?)\s?(.*?)\s*$").unwrap());
 
-static BLOCK_DIRECTIVE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^(pushtag|poptag|pushmeta|popmeta)\s+(.*?)\s*$").unwrap()
-});
+static BLOCK_DIRECTIVE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^(pushtag|poptag|pushmeta|popmeta)\s+(.*?)\s*$").unwrap());
 
 static DATE_DIRECTIVE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(
@@ -140,9 +129,8 @@ static DATE_DIRECTIVE_RE: LazyLock<Regex> = LazyLock::new(|| {
     .unwrap()
 });
 
-static INCLUDE_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r#"^include\s+"(.*?)"\s*$"#).unwrap()
-});
+static INCLUDE_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r#"^include\s+"(.*?)"\s*$"#).unwrap());
 
 pub fn parse_line(line: &str) -> Line<'_> {
     if line.trim().is_empty() {

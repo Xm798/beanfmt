@@ -18,11 +18,7 @@ fn follows_includes() {
         "include \"accounts.beancount\"\n\n2024-01-01 open Assets:Bank\n",
     )
     .unwrap();
-    fs::write(
-        &accounts_path,
-        "2024-01-01 open Expenses:Food\n",
-    )
-    .unwrap();
+    fs::write(&accounts_path, "2024-01-01 open Expenses:Food\n").unwrap();
 
     let results = format_recursive(&main_path, &default_options());
 
@@ -82,16 +78,8 @@ fn follows_glob_includes() {
         "include \"accounts/*.beancount\"\n\n2024-01-01 open Assets:Bank\n",
     )
     .unwrap();
-    fs::write(
-        sub.join("a.beancount"),
-        "2024-01-01 open Assets:A\n",
-    )
-    .unwrap();
-    fs::write(
-        sub.join("b.beancount"),
-        "2024-01-01 open Assets:B\n",
-    )
-    .unwrap();
+    fs::write(sub.join("a.beancount"), "2024-01-01 open Assets:A\n").unwrap();
+    fs::write(sub.join("b.beancount"), "2024-01-01 open Assets:B\n").unwrap();
 
     let results = format_recursive(&main_path, &default_options());
 

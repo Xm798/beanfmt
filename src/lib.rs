@@ -10,7 +10,7 @@ pub mod recursive;
 pub mod sort;
 
 use align::{align_balance, align_open, align_posting, align_price};
-use line::{parse_line, Line};
+use line::{Line, parse_line};
 use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
 use options::Options;
 use std::borrow::Cow;
@@ -48,9 +48,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 price,
                 comment,
             } => {
-                let number = number.map(|n| {
-                    normalize_thousands(n, &options.thousands_separator)
-                });
+                let number = number.map(|n| normalize_thousands(n, &options.thousands_separator));
                 let cost = cost.map(|c| normalize_braces(c, options.spaces_in_braces));
                 align_posting(
                     &options.indent,
@@ -89,12 +87,20 @@ pub fn format(input: &str, options: &Options) -> String {
                 let number = normalize_thousands(number, &options.thousands_separator);
                 align_price(date, commodity, &number, currency, options)
             }
-            Line::MetaItem { indent: _, key, value } => {
+            Line::MetaItem {
+                indent: _,
+                key,
+                value,
+            } => {
                 let value = normalize_braces(value, options.spaces_in_braces);
                 format!("{}{key}: {value}", options.indent.repeat(meta_depth))
             }
             Line::Comment { .. } => normalize_comment(raw_line),
-            Line::DateDirective { date, keyword, rest } => {
+            Line::DateDirective {
+                date,
+                keyword,
+                rest,
+            } => {
                 if rest.is_empty() {
                     format!("{date} {keyword}")
                 } else {

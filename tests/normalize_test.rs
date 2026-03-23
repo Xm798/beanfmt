@@ -68,10 +68,7 @@ fn thousands_add_large_number() {
 
 #[test]
 fn thousands_add_small_number() {
-    assert_eq!(
-        normalize_thousands("999", &ThousandsSeparator::Add),
-        "999"
-    );
+    assert_eq!(normalize_thousands("999", &ThousandsSeparator::Add), "999");
 }
 
 #[test]
@@ -164,10 +161,7 @@ fn thousands_add_integer_no_decimal() {
 
 #[test]
 fn thousands_add_zero() {
-    assert_eq!(
-        normalize_thousands("0", &ThousandsSeparator::Add),
-        "0"
-    );
+    assert_eq!(normalize_thousands("0", &ThousandsSeparator::Add), "0");
 }
 
 #[test]

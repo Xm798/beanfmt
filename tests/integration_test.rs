@@ -38,7 +38,11 @@ fn basic_transaction_with_postings() {
 
     // Each posting should use the configured indent (4 spaces)
     for line in result.lines().skip(1) {
-        assert!(line.starts_with("    "), "posting should start with 4-space indent: {:?}", line);
+        assert!(
+            line.starts_with("    "),
+            "posting should start with 4-space indent: {:?}",
+            line
+        );
     }
 }
 
@@ -96,7 +100,11 @@ fn close_passthrough() {
 fn posting_no_amount_with_comment() {
     let input = "2024-01-01 * \"Test\"\n  Assets:Bank ; reconciled\n";
     let result = format(input, &default_opts());
-    assert!(result.contains("; reconciled"), "comment on no-amount posting should be preserved: {}", result);
+    assert!(
+        result.contains("; reconciled"),
+        "comment on no-amount posting should be preserved: {}",
+        result
+    );
 }
 
 #[test]
@@ -141,9 +149,16 @@ fn thousands_separator_add() {
     };
     let input = "2024-01-31 balance Assets:Bank 1000000.00 USD\n";
     let result = format(input, &opts);
-    assert!(result.contains("1,000,000.00"), "should add thousands separators: {}", result);
+    assert!(
+        result.contains("1,000,000.00"),
+        "should add thousands separators: {}",
+        result
+    );
     // Date must NOT be corrupted
-    assert!(result.starts_with("2024-01-31"), "date must not be corrupted");
+    assert!(
+        result.starts_with("2024-01-31"),
+        "date must not be corrupted"
+    );
 }
 
 #[test]
@@ -154,13 +169,18 @@ fn thousands_separator_remove() {
     };
     let input = "2024-01-31 balance Assets:Bank 1,000.00 USD\n";
     let result = format(input, &opts);
-    assert!(result.contains("1000.00"), "should remove commas: {}", result);
+    assert!(
+        result.contains("1000.00"),
+        "should remove commas: {}",
+        result
+    );
 }
 
 #[test]
 fn posting_with_cost_and_price() {
     let opts = default_opts();
-    let input = "2024-01-01 * \"Buy stock\"\n  Assets:Brokerage  10 AAPL {185.50 USD} @ 185.50 USD\n";
+    let input =
+        "2024-01-01 * \"Buy stock\"\n  Assets:Brokerage  10 AAPL {185.50 USD} @ 185.50 USD\n";
     let result = format(input, &opts);
     assert!(result.contains("AAPL"));
     assert!(result.contains("{185.50 USD}"));
@@ -181,7 +201,10 @@ fn cjk_account_alignment() {
 
     let pos1 = lines[1].find("JPY").unwrap();
     let pos2 = lines[2].find("JPY").unwrap();
-    assert_eq!(pos1, pos2, "CJK postings should align currencies at same column");
+    assert_eq!(
+        pos1, pos2,
+        "CJK postings should align currencies at same column"
+    );
 }
 
 #[test]
@@ -235,7 +258,11 @@ fn spaces_in_braces() {
     };
     let input = "2024-01-01 * \"Buy\"\n  Assets:Brokerage  10 AAPL {185.50 USD}\n";
     let result = format(input, &opts);
-    assert!(result.contains("{ 185.50 USD }"), "should add spaces in braces: {}", result);
+    assert!(
+        result.contains("{ 185.50 USD }"),
+        "should add spaces in braces: {}",
+        result
+    );
 }
 
 #[test]
@@ -291,8 +318,14 @@ fn format_normalize_fixture() {
         ..Options::default()
     };
     let result = format(input, &opts);
-    assert!(result.contains("; comment without space"), "Comment should be normalized");
-    assert!(result.contains(";; narration with extra spaces"), "Narration should be normalized");
+    assert!(
+        result.contains("; comment without space"),
+        "Comment should be normalized"
+    );
+    assert!(
+        result.contains(";; narration with extra spaces"),
+        "Narration should be normalized"
+    );
     assert!(result.contains("1,234,567.89"), "Thousands should be added");
     assert!(result.contains("{ 150 USD }"), "Braces should have spaces");
 }

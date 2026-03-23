@@ -1,4 +1,4 @@
-use crate::line::{parse_line, Line};
+use crate::line::{Line, parse_line};
 use crate::options::Options;
 use glob::glob;
 use std::collections::{HashSet, VecDeque};
@@ -70,7 +70,9 @@ pub fn format_recursive(root_path: &Path, options: &Options) -> Vec<FormattedFil
         let includes = extract_includes(&raw, base_dir);
 
         for inc in includes {
-            if let Ok(canonical) = fs::canonicalize(&inc) && visited.insert(canonical.clone()) {
+            if let Ok(canonical) = fs::canonicalize(&inc)
+                && visited.insert(canonical.clone())
+            {
                 queue.push_back(canonical);
             }
         }

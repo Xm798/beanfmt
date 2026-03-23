@@ -61,8 +61,14 @@ fn pad_to_width_already_wider() {
 fn align_posting_basic() {
     let opts = opts(50, 55);
     let result = align_posting(
-        "    ", "Assets:Bank:Checking", Some("100.00"), Some("USD"),
-        None, None, None, &opts,
+        "    ",
+        "Assets:Bank:Checking",
+        Some("100.00"),
+        Some("USD"),
+        None,
+        None,
+        None,
+        &opts,
     );
     // Currency "USD" should start at column 50
     let currency_pos = display_width(&result[..result.find("USD").unwrap()], true) + 1;
@@ -74,12 +80,24 @@ fn align_posting_cjk_account() {
     let opts = opts(50, 55);
     // CJK account takes more display columns, alignment should compensate
     let result_cjk = align_posting(
-        "    ", "Assets:銀行:普通", Some("100.00"), Some("USD"),
-        None, None, None, &opts,
+        "    ",
+        "Assets:銀行:普通",
+        Some("100.00"),
+        Some("USD"),
+        None,
+        None,
+        None,
+        &opts,
     );
     let result_ascii = align_posting(
-        "    ", "Assets:Bank:Normal", Some("100.00"), Some("USD"),
-        None, None, None, &opts,
+        "    ",
+        "Assets:Bank:Normal",
+        Some("100.00"),
+        Some("USD"),
+        None,
+        None,
+        None,
+        &opts,
     );
     // Both should have currency at column 50
     let cjk_pos = display_width(&result_cjk[..result_cjk.find("USD").unwrap()], true) + 1;
@@ -92,8 +110,14 @@ fn align_posting_cjk_account() {
 fn align_posting_account_only() {
     let opts = opts(50, 55);
     let result = align_posting(
-        "    ", "Assets:Bank:Checking", None, None,
-        None, None, None, &opts,
+        "    ",
+        "Assets:Bank:Checking",
+        None,
+        None,
+        None,
+        None,
+        None,
+        &opts,
     );
     assert_eq!(result, "    Assets:Bank:Checking");
     // No trailing spaces
@@ -104,8 +128,14 @@ fn align_posting_account_only() {
 fn align_posting_with_cost_and_price() {
     let opts = opts(50, 60);
     let result = align_posting(
-        "    ", "Assets:Stock", Some("10"), Some("AAPL"),
-        Some("{150.00 USD}"), Some("@ 155.00 USD"), None, &opts,
+        "    ",
+        "Assets:Stock",
+        Some("10"),
+        Some("AAPL"),
+        Some("{150.00 USD}"),
+        Some("@ 155.00 USD"),
+        None,
+        &opts,
     );
     assert!(result.contains("AAPL"));
     assert!(result.contains("{150.00 USD}"));
@@ -121,8 +151,14 @@ fn align_posting_with_cost_and_price() {
 fn align_posting_with_comment() {
     let opts = opts(50, 55);
     let result = align_posting(
-        "    ", "Expenses:Food", Some("25.00"), Some("USD"),
-        None, None, Some("; lunch"), &opts,
+        "    ",
+        "Expenses:Food",
+        Some("25.00"),
+        Some("USD"),
+        None,
+        None,
+        Some("; lunch"),
+        &opts,
     );
     assert!(result.ends_with("; lunch"));
 }
@@ -170,8 +206,14 @@ fn align_price_basic() {
 fn align_posting_negative_number() {
     let opts = opts(50, 55);
     let result = align_posting(
-        "    ", "Assets:Bank:Checking", Some("-500.00"), Some("USD"),
-        None, None, None, &opts,
+        "    ",
+        "Assets:Bank:Checking",
+        Some("-500.00"),
+        Some("USD"),
+        None,
+        None,
+        None,
+        &opts,
     );
     assert!(result.contains("-500.00"));
     let currency_pos = display_width(&result[..result.find("USD").unwrap()], true) + 1;
@@ -183,8 +225,14 @@ fn align_posting_long_account_exceeds_column() {
     let opts = opts(30, 35);
     // Account is very long, exceeding currency_column
     let result = align_posting(
-        "    ", "Assets:VeryLongBankName:VeryLongSubAccount",
-        Some("100.00"), Some("USD"), None, None, None, &opts,
+        "    ",
+        "Assets:VeryLongBankName:VeryLongSubAccount",
+        Some("100.00"),
+        Some("USD"),
+        None,
+        None,
+        None,
+        &opts,
     );
     // Should still have at least 2 spaces between account and number
     let account_end = "    Assets:VeryLongBankName:VeryLongSubAccount";

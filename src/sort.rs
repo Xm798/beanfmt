@@ -1,4 +1,4 @@
-use crate::line::{parse_line, Line};
+use crate::line::{Line, parse_line};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -9,14 +9,12 @@ struct Entry {
     time: Option<String>,
 }
 
-static TIME_HM_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\d{2}):(\d{2})$").unwrap());
+static TIME_HM_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{2}):(\d{2})$").unwrap());
 
 static TIME_HMS_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(\d{2}):(\d{2}):(\d{2})$").unwrap());
 
-static UNIX_TS_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\d{10,16})$").unwrap());
+static UNIX_TS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"^(\d{10,16})$").unwrap());
 
 pub fn parse_time(value: &str) -> Option<String> {
     let value = value.trim().trim_matches('"');
@@ -111,7 +109,9 @@ fn parse_segments(input: &str) -> Vec<Segment> {
 
         if is_continuation(&parsed) {
             if let Some(ref mut entry) = current_entry {
-                if let Line::MetaItem { key, value, .. } = &parsed && *key == "time" {
+                if let Line::MetaItem { key, value, .. } = &parsed
+                    && *key == "time"
+                {
                     entry.time = parse_time(value);
                 }
                 entry.lines.push(raw.to_string());
@@ -318,7 +318,11 @@ pub fn sort_input(input: &str) -> String {
         // If there were trailing blanks beyond what we used as separators, they were already
         // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
         // from the original are trailing blanks for the compartment.
-        let used_separators = if sorted.len() > 1 { sorted.len() - 1 } else { 0 };
+        let used_separators = if sorted.len() > 1 {
+            sorted.len() - 1
+        } else {
+            0
+        };
         let total_blanks = separator_positions.len();
         for _ in used_separators..total_blanks {
             output.push('\n');

@@ -208,9 +208,8 @@ fn format_file(
         fixed_cjk_width,
         sort,
     )?;
-    let content = std::fs::read_to_string(path).map_err(|e| {
-        PyOSError::new_err(format!("{path}: {e}"))
-    })?;
+    let content =
+        std::fs::read_to_string(path).map_err(|e| PyOSError::new_err(format!("{path}: {e}")))?;
     Ok(crate::format(&content, &opts))
 }
 

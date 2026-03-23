@@ -1,6 +1,6 @@
-use clap::Parser;
 use beanfmt::options::{Options, ThousandsSeparator};
 use beanfmt::recursive::format_recursive;
+use clap::Parser;
 use std::fs;
 use std::io::{self, Read};
 use std::path::PathBuf;

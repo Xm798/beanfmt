@@ -103,12 +103,7 @@ pub fn align_balance(
 }
 
 /// Align an open directive so currencies start at `currency_column`.
-pub fn align_open(
-    date: &str,
-    account: &str,
-    currencies: &str,
-    options: &Options,
-) -> String {
+pub fn align_open(date: &str, account: &str, currencies: &str, options: &Options) -> String {
     if currencies.is_empty() {
         return format!("{date} open {account}");
     }
