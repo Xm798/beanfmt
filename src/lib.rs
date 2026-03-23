@@ -1,7 +1,11 @@
+#[cfg(all(feature = "python", feature = "wasm"))]
+compile_error!("features \"python\" and \"wasm\" are mutually exclusive");
+
 pub mod align;
 pub mod line;
 pub mod normalize;
 pub mod options;
+#[cfg(any(feature = "cli", feature = "python"))]
 pub mod recursive;
 pub mod sort;
 
@@ -9,13 +13,14 @@ use align::{align_balance, align_open, align_posting, align_price};
 use line::{parse_line, Line};
 use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
 use options::Options;
+use std::borrow::Cow;
 
 pub fn format(input: &str, options: &Options) -> String {
     // Step 1: Sort if enabled
-    let working = if options.sort {
-        sort::sort_input(input)
+    let working: Cow<str> = if options.sort {
+        Cow::Owned(sort::sort_input(input))
     } else {
-        input.to_string()
+        Cow::Borrowed(input)
     };
 
     // Step 2: Parse, normalize, and align each line
@@ -88,6 +93,13 @@ pub fn format(input: &str, options: &Options) -> String {
                 format!("{}{key}: {value}", options.indent)
             }
             Line::Comment { .. } => normalize_comment(raw_line),
+            Line::DateDirective { date, keyword, rest } => {
+                if rest.is_empty() {
+                    format!("{date} {keyword}")
+                } else {
+                    format!("{date} {keyword} {rest}")
+                }
+            }
             Line::BlockDirective { .. } | Line::Include { .. } | Line::Other(_) => {
                 raw_line.to_string()
             }
@@ -114,3 +126,9 @@ pub fn format(input: &str, options: &Options) -> String {
 
     result
 }
+
+#[cfg(feature = "wasm")]
+pub mod wasm;
+
+#[cfg(feature = "python")]
+mod python;

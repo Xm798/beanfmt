@@ -1,11 +1,12 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 pub enum ThousandsSeparator {
     Add,
     Remove,
     Keep,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     pub indent: String,
     pub currency_column: usize,
@@ -14,7 +15,6 @@ pub struct Options {
     pub spaces_in_braces: bool,
     pub fixed_cjk_width: bool,
     pub sort: bool,
-    pub recursive: bool,
 }
 
 impl Default for Options {
@@ -27,7 +27,6 @@ impl Default for Options {
             spaces_in_braces: false,
             fixed_cjk_width: true,
             sort: false,
-            recursive: false,
         }
     }
 }

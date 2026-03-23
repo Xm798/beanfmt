@@ -8,21 +8,31 @@ license = "MIT"
 [lib]
 name = "husk"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "husk"
 path = "src/cli/main.rs"
-
-[dependencies]
-clap = { version = "4", features = ["derive"] }
-regex = "1"
-unicode-width = "0.2"
-glob = "0.3"
+required-features = ["cli"]
 
 [features]
-default = []
+default = ["cli"]
+cli = ["dep:clap", "dep:glob"]
 wasm = ["dep:wasm-bindgen"]
-python = ["dep:pyo3"]
+python = ["dep:pyo3", "dep:glob"]
+
+[dependencies]
+regex = { version = "1", default-features = false, features = ["std", "unicode-perl", "unicode-gencat"] }
+unicode-width = "0.2"
+
+[dependencies.clap]
+version = "4"
+features = ["derive"]
+optional = true
+
+[dependencies.glob]
+version = "0.3"
+optional = true
 
 [dependencies.wasm-bindgen]
 version = "0.2"
@@ -31,7 +41,13 @@ optional = true
 [dependencies.pyo3]
 version = "0.24"
 optional = true
-features = ["extension-module"]
+features = ["extension-module", "abi3-py39"]
 
 [dev-dependencies]
 tempfile = "3"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+strip = true

@@ -25,9 +25,9 @@ struct Cli {
     #[arg(long, default_value_t = 75)]
     cost_column: usize,
 
-    /// Thousands separator: add, remove, keep
-    #[arg(long, default_value = "keep")]
-    thousands: String,
+    /// Thousands separator handling
+    #[arg(long, value_enum, default_value_t = ThousandsSeparator::Keep)]
+    thousands: ThousandsSeparator,
 
     /// Add spaces inside cost braces
     #[arg(long)]
@@ -57,15 +57,10 @@ fn main() {
         indent: cli.indent.clone(),
         currency_column: cli.currency_column,
         cost_column: cli.cost_column,
-        thousands_separator: match cli.thousands.as_str() {
-            "add" => ThousandsSeparator::Add,
-            "remove" => ThousandsSeparator::Remove,
-            _ => ThousandsSeparator::Keep,
-        },
+        thousands_separator: cli.thousands,
         spaces_in_braces: cli.spaces_in_braces,
         fixed_cjk_width: !cli.no_fixed_cjk_width,
         sort: cli.sort,
-        recursive: cli.recursive,
     };
 
     for file in &cli.files {
@@ -97,7 +92,7 @@ fn main() {
             } else {
                 let input = fs::read_to_string(&path).unwrap_or_else(|e| {
                     eprintln!("Error reading {}: {}", path.display(), e);
-                    std::process::exit(1);
+                    process::exit(1);
                 });
                 let output = husk::format(&input, &options);
                 if cli.write {
