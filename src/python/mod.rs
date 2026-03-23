@@ -104,6 +104,7 @@ impl PyOptions {
 
 /// Resolve an `Options` value from an optional `PyOptions` object plus kwargs.
 /// If both `options` and individual kwargs are provided, kwargs override.
+#[allow(clippy::too_many_arguments)]
 fn resolve_options(
     options: Option<&PyOptions>,
     indent: Option<String>,

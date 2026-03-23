@@ -15,6 +15,7 @@ fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
 
 /// Format a beancount document with full options.
 #[wasm_bindgen]
+#[allow(clippy::too_many_arguments)]
 pub fn format(
     input: &str,
     indent: &str,
