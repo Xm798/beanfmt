@@ -2,7 +2,7 @@
 declare module "*/wasm" {
   export function format(
     input: string,
-    indent: string,
+    indent: number,
     currency_column: number,
     cost_column: number,
     thousands: string,
