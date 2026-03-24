@@ -55,9 +55,9 @@
     },
     "sort_timeless": {
       "type": "string",
-      "default": "begin",
-      "enum": ["begin", "end"],
-      "description": "Where to place entries without time metadata within a day. \"begin\" places them before timed entries, \"end\" places them after."
+      "default": "keep",
+      "enum": ["begin", "end", "keep"],
+      "description": "Where to place entries without time metadata within a day. \"begin\" places them before timed entries, \"end\" places them after, \"keep\" preserves their original relative order."
     },
     "sort_exclude": {
       "type": "array",

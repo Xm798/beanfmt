@@ -35,11 +35,12 @@ fixed_cjk_width = true
 #   "off" — preserve original order
 sort = "off"
 
-# Where to place entries without time metadata within a day (default: "begin")
+# Where to place entries without time metadata within a day (default: "keep")
 #   "begin" — before timed entries
 #   "end"   — after timed entries
+#   "keep"  — preserve original relative order within each date group
 # Multiple timeless entries preserve their relative order.
-sort_timeless = "begin"
+sort_timeless = "keep"
 
 # Directive types to exclude from sorting (default: [])
 # Excluded directives act as sort barriers, preventing entries on either side

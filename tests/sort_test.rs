@@ -872,6 +872,180 @@ fn sortable_directive_invalid() {
 }
 
 #[test]
+fn timeless_keep_preserves_timeless_order() {
+    let input = "\
+2024-01-01 open Assets:Bank
+2024-01-01 open Assets:Savings
+2024-01-01 open Assets:Checking
+";
+    // All timeless, same date — should preserve original order
+    assert_eq!(sort_input(input, false, TimelessPosition::Keep, &[]), input);
+}
+
+#[test]
+fn timeless_keep_sorts_timed_entries() {
+    let input = "\
+2024-01-01 open Assets:Bank
+2024-01-01 * \"Later\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+2024-01-01 * \"Earlier\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+2024-01-01 balance Assets:Bank  300 USD
+";
+    let expected = "\
+2024-01-01 open Assets:Bank
+2024-01-01 * \"Earlier\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+2024-01-01 * \"Later\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+2024-01-01 balance Assets:Bank  300 USD
+";
+    assert_eq!(
+        sort_input(input, false, TimelessPosition::Keep, &[]),
+        expected
+    );
+}
+
+#[test]
+fn timeless_keep_cross_date() {
+    let input = "\
+2024-01-03 open Assets:Bank
+2024-01-01 open Assets:Savings
+2024-01-03 open Assets:Checking
+";
+    let expected = "\
+2024-01-01 open Assets:Savings
+2024-01-03 open Assets:Bank
+2024-01-03 open Assets:Checking
+";
+    assert_eq!(
+        sort_input(input, false, TimelessPosition::Keep, &[]),
+        expected
+    );
+}
+
+#[test]
+fn timeless_keep_descending() {
+    let input = "\
+2024-01-01 open Assets:Bank
+2024-01-01 * \"Morning\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+2024-01-01 * \"Afternoon\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+2024-01-02 open Assets:Savings
+";
+    let result = sort_input(input, true, TimelessPosition::Keep, &[]);
+    // Day 2 first, then day 1; within day 1: timeless in original order, timed in reverse
+    let expected = "\
+2024-01-02 open Assets:Savings
+2024-01-01 open Assets:Bank
+2024-01-01 * \"Afternoon\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+2024-01-01 * \"Morning\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+";
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn timeless_keep_all_timed() {
+    let input = "\
+2024-01-01 * \"Later\"
+  time: \"15:30\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"Earlier\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+";
+    // All timed — should behave identically to Begin/End
+    let result_keep = sort_input(input, false, TimelessPosition::Keep, &[]);
+    let result_begin = sort_input(input, false, TimelessPosition::Begin, &[]);
+    assert_eq!(result_keep, result_begin);
+}
+
+#[test]
+fn timeless_keep_with_sort_exclude() {
+    let input = "\
+2024-01-01 open Assets:Bank
+
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+
+2024-01-02 * \"B\"
+  Assets:Bank  200 USD
+
+2024-12-31 close Assets:Bank
+";
+    let exclude = &[SortableDirective::Open, SortableDirective::Close];
+    let expected = "\
+2024-01-01 open Assets:Bank
+
+2024-01-02 * \"B\"
+  Assets:Bank  200 USD
+
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+
+2024-12-31 close Assets:Bank
+";
+    assert_eq!(
+        sort_input(input, false, TimelessPosition::Keep, exclude),
+        expected
+    );
+}
+
+#[test]
+fn timeless_keep_blank_line_preservation() {
+    let input = "\
+2024-01-02 open Assets:Bank
+
+2024-01-01 * \"A\"
+  Assets:Bank  100 USD
+
+2024-01-03 * \"B\"
+  Assets:Bank  200 USD
+";
+    let expected = "\
+2024-01-01 * \"A\"
+  Assets:Bank  100 USD
+
+2024-01-02 open Assets:Bank
+
+2024-01-03 * \"B\"
+  Assets:Bank  200 USD
+";
+    assert_eq!(
+        sort_input(input, false, TimelessPosition::Keep, &[]),
+        expected
+    );
+}
+
+#[test]
+fn timeless_keep_from_str() {
+    assert_eq!(
+        "keep".parse::<TimelessPosition>(),
+        Ok(TimelessPosition::Keep)
+    );
+    assert_eq!(
+        "KEEP".parse::<TimelessPosition>(),
+        Ok(TimelessPosition::Keep)
+    );
+    assert_eq!(
+        "Keep".parse::<TimelessPosition>(),
+        Ok(TimelessPosition::Keep)
+    );
+}
+
+#[test]
 fn all_date_directive_keywords_sortable() {
     // Ensures every keyword accepted by the parser is handled by extract_date.
     let keywords = [

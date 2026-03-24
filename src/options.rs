@@ -95,6 +95,7 @@ impl FromStr for SortOrder {
 pub enum TimelessPosition {
     Begin,
     End,
+    Keep,
 }
 
 impl FromStr for TimelessPosition {
@@ -104,8 +105,9 @@ impl FromStr for TimelessPosition {
         match s.to_ascii_lowercase().as_str() {
             "begin" => Ok(TimelessPosition::Begin),
             "end" => Ok(TimelessPosition::End),
+            "keep" => Ok(TimelessPosition::Keep),
             other => Err(format!(
-                "invalid sort_timeless: {other:?}, expected \"begin\" or \"end\""
+                "invalid sort_timeless: {other:?}, expected \"begin\", \"end\", or \"keep\""
             )),
         }
     }
@@ -140,7 +142,7 @@ impl Default for Options {
             spaces_in_braces: false,
             fixed_cjk_width: true,
             sort: SortOrder::Off,
-            sort_timeless: TimelessPosition::Begin,
+            sort_timeless: TimelessPosition::Keep,
             sort_exclude: Vec::new(),
         }
     }

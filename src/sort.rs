@@ -1,6 +1,7 @@
 use crate::line::{Line, parse_line};
 use crate::options::{SortableDirective, TimelessPosition};
 use regex::Regex;
+use std::collections::BTreeMap;
 use std::sync::LazyLock;
 
 #[derive(Debug, Clone)]
@@ -203,12 +204,17 @@ fn sort_key(entry: &Entry, timeless: TimelessPosition) -> (&str, &str) {
         None => match timeless {
             TimelessPosition::Begin => "",
             TimelessPosition::End => "\x7f",
+            TimelessPosition::Keep => unreachable!("Keep uses sort_entries_keep, not the LIS path"),
         },
     };
     (entry.date.as_deref().unwrap_or(""), time)
 }
 
 fn can_go_before(a: &Entry, b: &Entry, timeless: TimelessPosition) -> bool {
+    debug_assert!(
+        timeless != TimelessPosition::Keep,
+        "Keep uses sort_entries_keep"
+    );
     match (&a.date, &b.date) {
         (Some(da), Some(db)) => {
             if da < db {
@@ -314,6 +320,59 @@ fn merge_entries(
     result
 }
 
+fn sort_entries_keep(entries: Vec<Entry>, descending: bool) -> Vec<Entry> {
+    // Step 1: Group entries by date, preserving insertion order within each group.
+    let mut date_groups: BTreeMap<String, Vec<Entry>> = BTreeMap::new();
+    for entry in entries {
+        let key = entry.date.clone().unwrap_or_default();
+        date_groups.entry(key).or_default().push(entry);
+    }
+
+    // Step 2: Determine date iteration order.
+    let date_keys: Vec<String> = if descending {
+        date_groups.keys().rev().cloned().collect()
+    } else {
+        date_groups.keys().cloned().collect()
+    };
+
+    // Step 3: For each date group, sort only timed entries via slot replacement.
+    let mut result: Vec<Entry> = Vec::new();
+    for date_key in date_keys {
+        let mut group = date_groups.remove(&date_key).unwrap();
+
+        // Collect indices of timed entries, sort by time.
+        let mut timed_indices: Vec<usize> = group
+            .iter()
+            .enumerate()
+            .filter(|(_, e)| e.time.is_some())
+            .map(|(i, _)| i)
+            .collect();
+        timed_indices.sort_by(|&a, &b| {
+            let ord = group[a].time.cmp(&group[b].time);
+            if descending { ord.reverse() } else { ord }
+        });
+
+        // Build sorted timed entries via Option::take to avoid clones.
+        let mut slots: Vec<Option<Entry>> = group.drain(..).map(Some).collect();
+        let sorted_timed: Vec<Entry> = timed_indices
+            .iter()
+            .map(|&i| slots[i].take().unwrap())
+            .collect();
+
+        // Slot replacement: timeless entries stay in place, timed slots filled from sorted queue.
+        let mut timed_iter = sorted_timed.into_iter();
+        for slot in &mut slots {
+            if slot.is_some() {
+                result.push(slot.take().unwrap());
+            } else {
+                result.push(timed_iter.next().unwrap());
+            }
+        }
+    }
+
+    result
+}
+
 fn sort_entries(mut entries: Vec<Entry>, timeless: TimelessPosition) -> Vec<Entry> {
     if entries.len() <= 1 {
         return entries;
@@ -382,20 +441,26 @@ pub fn sort_input(
             return;
         }
 
-        // When descending, reverse() flips within-day order too,
-        // so flip the timeless position to compensate.
-        let effective_timeless = if descending {
-            match timeless {
-                TimelessPosition::Begin => TimelessPosition::End,
-                TimelessPosition::End => TimelessPosition::Begin,
-            }
+        let sorted = if timeless == TimelessPosition::Keep {
+            sort_entries_keep(all_entries, descending)
         } else {
-            timeless
+            // When descending, reverse() flips within-day order too,
+            // so flip the timeless position to compensate.
+            let effective_timeless = if descending {
+                match timeless {
+                    TimelessPosition::Begin => TimelessPosition::End,
+                    TimelessPosition::End => TimelessPosition::Begin,
+                    TimelessPosition::Keep => unreachable!(),
+                }
+            } else {
+                timeless
+            };
+            let mut s = sort_entries(all_entries, effective_timeless);
+            if descending {
+                s.reverse();
+            }
+            s
         };
-        let mut sorted = sort_entries(all_entries, effective_timeless);
-        if descending {
-            sorted.reverse();
-        }
 
         // Build a set of entry indices (1-based) after which a blank line should appear,
         // preserving the original blank-line pattern from the input.

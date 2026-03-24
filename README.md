@@ -104,7 +104,7 @@ thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
 sort = "asc"    # "asc", "desc", "off", or true/false
-sort_timeless = "begin"  # "begin" or "end"
+sort_timeless = "keep"   # "begin", "end", or "keep"
 sort_exclude = ["open", "close"]  # excluded types act as sort barriers
 ```
 

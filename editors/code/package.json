@@ -73,9 +73,9 @@
         },
         "beanfmt.sortTimeless": {
           "type": "string",
-          "enum": ["begin", "end"],
-          "default": "begin",
-          "description": "Where to place entries without time metadata within a day: begin (before timed entries) or end (after timed entries)."
+          "enum": ["begin", "end", "keep"],
+          "default": "keep",
+          "description": "Where to place entries without time metadata within a day: begin (before timed entries), end (after timed entries), or keep (preserve original order)."
         },
         "beanfmt.sortExclude": {
           "type": "array",

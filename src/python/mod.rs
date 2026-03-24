@@ -132,6 +132,7 @@ impl PyOptions {
         let sort_timeless = match o.sort_timeless {
             TimelessPosition::Begin => "'begin'",
             TimelessPosition::End => "'end'",
+            TimelessPosition::Keep => "'keep'",
         };
         let sort_exclude: Vec<String> = o.sort_exclude.iter().map(|d| format!("'{d}'")).collect();
         let sort_exclude_str = format!("[{}]", sort_exclude.join(", "));
