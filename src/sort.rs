@@ -361,28 +361,19 @@ pub fn sort_input(input: &str, descending: bool, timeless: TimelessPosition) -> 
             sorted.reverse();
         }
 
-        // Emit entries with blank line separators between them
+        // Build a set of entry indices (1-based) after which a blank line should appear,
+        // preserving the original blank-line pattern from the input.
+        let blank_after: std::collections::HashSet<usize> =
+            separator_positions.iter().copied().collect();
+
         for (i, entry) in sorted.iter().enumerate() {
-            if i > 0 {
-                output.push('\n');
-            }
             for line in &entry.lines {
                 output.push_str(line);
                 output.push('\n');
             }
-        }
-
-        // If there were trailing blanks beyond what we used as separators, they were already
-        // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
-        // from the original are trailing blanks for the compartment.
-        let used_separators = if sorted.len() > 1 {
-            sorted.len() - 1
-        } else {
-            0
-        };
-        let total_blanks = separator_positions.len();
-        for _ in used_separators..total_blanks {
-            output.push('\n');
+            if blank_after.contains(&(i + 1)) {
+                output.push('\n');
+            }
         }
     };
 
