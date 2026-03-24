@@ -3,7 +3,7 @@ use serde::de::{self, Deserializer};
 use std::fs;
 use std::path::Path;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
+use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
 
 impl<'de> Deserialize<'de> for SortOrder {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -29,6 +29,13 @@ impl<'de> Deserialize<'de> for SortOrder {
     }
 }
 
+impl<'de> Deserialize<'de> for SortableDirective {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(|msg: String| de::Error::custom(msg))
+    }
+}
+
 impl<'de> Deserialize<'de> for TimelessPosition {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
@@ -46,6 +53,7 @@ pub struct FileConfig {
     pub fixed_cjk_width: Option<bool>,
     pub sort: Option<SortOrder>,
     pub sort_timeless: Option<TimelessPosition>,
+    pub sort_exclude: Option<Vec<SortableDirective>>,
 }
 
 impl FileConfig {
@@ -59,6 +67,7 @@ impl FileConfig {
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
             sort: other.sort.or(self.sort),
             sort_timeless: other.sort_timeless.or(self.sort_timeless),
+            sort_exclude: other.sort_exclude.or(self.sort_exclude),
         }
     }
 
@@ -83,6 +92,7 @@ impl FileConfig {
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
             sort: self.sort.unwrap_or(defaults.sort),
             sort_timeless: self.sort_timeless.unwrap_or(defaults.sort_timeless),
+            sort_exclude: self.sort_exclude.unwrap_or(defaults.sort_exclude),
         }
     }
 }

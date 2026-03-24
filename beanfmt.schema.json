@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Xm798/beanfmt/blob/master/beanfmt.schema.json",
+  "title": "beanfmt configuration",
+  "description": "Configuration file for beanfmt, a fast beancount file formatter with CJK support.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "indent": {
+      "type": "integer",
+      "default": 4,
+      "minimum": 0,
+      "description": "Number of spaces for indentation."
+    },
+    "currency_column": {
+      "type": "integer",
+      "default": 70,
+      "minimum": 1,
+      "description": "Column to align currencies to."
+    },
+    "cost_column": {
+      "type": "integer",
+      "default": 75,
+      "minimum": 1,
+      "description": "Column to align costs (e.g. {100 USD}) to."
+    },
+    "thousands": {
+      "type": "string",
+      "default": "keep",
+      "enum": ["add", "remove", "keep"],
+      "description": "Thousands separator handling. \"add\" inserts commas (1000000 → 1,000,000), \"remove\" strips commas (1,000,000 → 1000000), \"keep\" leaves as-is."
+    },
+    "spaces_in_braces": {
+      "type": "boolean",
+      "default": false,
+      "description": "Add spaces inside cost braces: { 100 USD } vs {100 USD}."
+    },
+    "fixed_cjk_width": {
+      "type": "boolean",
+      "default": true,
+      "description": "Treat CJK characters as double-width for alignment."
+    },
+    "sort": {
+      "default": "off",
+      "description": "Sort entries by date. Accepts \"asc\", \"desc\", \"off\", or a boolean (true = asc, false = off).",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["asc", "desc", "off"]
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    },
+    "sort_timeless": {
+      "type": "string",
+      "default": "begin",
+      "enum": ["begin", "end"],
+      "description": "Where to place entries without time metadata within a day. \"begin\" places them before timed entries, \"end\" places them after."
+    },
+    "sort_exclude": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["transaction", "balance", "open", "close", "price", "date-directive"]
+      },
+      "default": [],
+      "description": "Directive types to exclude from sorting. Excluded directives act as sort barriers."
+    }
+  }
+}

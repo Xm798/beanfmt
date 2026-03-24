@@ -2,7 +2,7 @@ use pyo3::exceptions::{PyOSError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyBool;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
+use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -30,6 +30,13 @@ fn parse_timeless(s: &str) -> PyResult<TimelessPosition> {
     s.parse().map_err(|msg: String| PyValueError::new_err(msg))
 }
 
+fn parse_sort_exclude(items: Vec<String>) -> PyResult<Vec<SortableDirective>> {
+    items
+        .iter()
+        .map(|s| s.parse().map_err(|msg: String| PyValueError::new_err(msg)))
+        .collect()
+}
+
 #[allow(clippy::too_many_arguments)]
 fn build_options(
     indent: Option<usize>,
@@ -40,6 +47,7 @@ fn build_options(
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
     sort_timeless: Option<TimelessPosition>,
+    sort_exclude: Option<Vec<SortableDirective>>,
 ) -> PyResult<Options> {
     let defaults = Options::default();
     let ts = match thousands_separator {
@@ -55,6 +63,7 @@ fn build_options(
         fixed_cjk_width: fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
         sort: sort.unwrap_or(defaults.sort),
         sort_timeless: sort_timeless.unwrap_or(defaults.sort_timeless),
+        sort_exclude: sort_exclude.unwrap_or(defaults.sort_exclude),
     })
 }
 
@@ -77,6 +86,7 @@ impl PyOptions {
         fixed_cjk_width = None,
         sort = None,
         sort_timeless = None,
+        sort_exclude = None,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -88,9 +98,11 @@ impl PyOptions {
         fixed_cjk_width: Option<bool>,
         sort: Option<&Bound<'_, PyAny>>,
         sort_timeless: Option<String>,
+        sort_exclude: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let sort = sort.map(parse_sort).transpose()?;
         let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+        let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
@@ -100,6 +112,7 @@ impl PyOptions {
             fixed_cjk_width,
             sort,
             sort_timeless,
+            sort_exclude,
         )?;
         Ok(Self { inner })
     }
@@ -120,10 +133,12 @@ impl PyOptions {
             TimelessPosition::Begin => "'begin'",
             TimelessPosition::End => "'end'",
         };
+        let sort_exclude: Vec<String> = o.sort_exclude.iter().map(|d| format!("'{d}'")).collect();
+        let sort_exclude_str = format!("[{}]", sort_exclude.join(", "));
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, \
              thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
-             sort_timeless={})",
+             sort_timeless={}, sort_exclude={})",
             o.indent,
             o.currency_column,
             o.cost_column,
@@ -132,6 +147,7 @@ impl PyOptions {
             if o.fixed_cjk_width { "True" } else { "False" },
             sort,
             sort_timeless,
+            sort_exclude_str,
         )
     }
 }
@@ -149,6 +165,7 @@ fn resolve_options(
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
     sort_timeless: Option<TimelessPosition>,
+    sort_exclude: Option<Vec<SortableDirective>>,
 ) -> PyResult<Options> {
     let base = match options {
         Some(o) => o.inner.clone(),
@@ -169,6 +186,7 @@ fn resolve_options(
         fixed_cjk_width: fixed_cjk_width.unwrap_or(base.fixed_cjk_width),
         sort: sort.unwrap_or(base.sort),
         sort_timeless: sort_timeless.unwrap_or(base.sort_timeless),
+        sort_exclude: sort_exclude.unwrap_or(base.sort_exclude),
     })
 }
 
@@ -185,6 +203,7 @@ fn resolve_options(
     fixed_cjk_width = None,
     sort = None,
     sort_timeless = None,
+    sort_exclude = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format(
@@ -198,9 +217,11 @@ fn format(
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
+    sort_exclude: Option<Vec<String>>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -211,6 +232,7 @@ fn format(
         fixed_cjk_width,
         sort,
         sort_timeless,
+        sort_exclude,
     )?;
     Ok(crate::format(input, &opts))
 }
@@ -228,6 +250,7 @@ fn format(
     fixed_cjk_width = None,
     sort = None,
     sort_timeless = None,
+    sort_exclude = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_file(
@@ -241,9 +264,11 @@ fn format_file(
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
+    sort_exclude: Option<Vec<String>>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -254,6 +279,7 @@ fn format_file(
         fixed_cjk_width,
         sort,
         sort_timeless,
+        sort_exclude,
     )?;
     let content =
         std::fs::read_to_string(path).map_err(|e| PyOSError::new_err(format!("{path}: {e}")))?;
@@ -274,6 +300,7 @@ fn format_file(
     fixed_cjk_width = None,
     sort = None,
     sort_timeless = None,
+    sort_exclude = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_recursive(
@@ -287,11 +314,13 @@ fn format_recursive(
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
+    sort_exclude: Option<Vec<String>>,
 ) -> PyResult<Vec<(String, String)>> {
     use std::path::Path;
 
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
 
     let p = Path::new(path);
     if !p.exists() {
@@ -310,6 +339,7 @@ fn format_recursive(
         fixed_cjk_width,
         sort,
         sort_timeless,
+        sort_exclude,
     )?;
 
     let results = crate::recursive::format_recursive(p, &opts);

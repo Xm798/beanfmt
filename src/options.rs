@@ -1,5 +1,48 @@
 use std::str::FromStr;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+pub enum SortableDirective {
+    Transaction,
+    Balance,
+    Open,
+    Close,
+    Price,
+    #[cfg_attr(feature = "cli", value(name = "date-directive"))]
+    DateDirective,
+}
+
+impl FromStr for SortableDirective {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "transaction" | "txn" => Ok(SortableDirective::Transaction),
+            "balance" => Ok(SortableDirective::Balance),
+            "open" => Ok(SortableDirective::Open),
+            "close" => Ok(SortableDirective::Close),
+            "price" => Ok(SortableDirective::Price),
+            "date-directive" | "date_directive" => Ok(SortableDirective::DateDirective),
+            other => Err(format!(
+                "invalid directive: {other:?}, expected one of: transaction, balance, open, close, price, date-directive"
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for SortableDirective {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SortableDirective::Transaction => write!(f, "transaction"),
+            SortableDirective::Balance => write!(f, "balance"),
+            SortableDirective::Open => write!(f, "open"),
+            SortableDirective::Close => write!(f, "close"),
+            SortableDirective::Price => write!(f, "price"),
+            SortableDirective::DateDirective => write!(f, "date-directive"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ThousandsSeparator {
     Add,
@@ -61,6 +104,7 @@ pub struct Options {
     pub fixed_cjk_width: bool,
     pub sort: SortOrder,
     pub sort_timeless: TimelessPosition,
+    pub sort_exclude: Vec<SortableDirective>,
 }
 
 impl Options {
@@ -80,6 +124,7 @@ impl Default for Options {
             fixed_cjk_width: true,
             sort: SortOrder::Off,
             sort_timeless: TimelessPosition::Begin,
+            sort_exclude: Vec::new(),
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::line::{Line, parse_line};
-use crate::options::TimelessPosition;
+use crate::options::{SortableDirective, TimelessPosition};
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -70,14 +70,30 @@ fn is_continuation(line: &Line) -> bool {
     }
 }
 
-fn extract_date(line: &Line) -> Option<String> {
+fn extract_date(line: &Line, exclude: &[SortableDirective]) -> Option<String> {
     match line {
         Line::TransactionHeader { date, .. }
-        | Line::Balance { date, .. }
-        | Line::Open { date, .. }
-        | Line::Close { date, .. }
-        | Line::Price { date, .. }
-        | Line::DateDirective { date, .. } => Some(date.to_string()),
+            if !exclude.contains(&SortableDirective::Transaction) =>
+        {
+            Some(date.to_string())
+        }
+        Line::Balance { date, .. } if !exclude.contains(&SortableDirective::Balance) => {
+            Some(date.to_string())
+        }
+        Line::Open { date, .. } if !exclude.contains(&SortableDirective::Open) => {
+            Some(date.to_string())
+        }
+        Line::Close { date, .. } if !exclude.contains(&SortableDirective::Close) => {
+            Some(date.to_string())
+        }
+        Line::Price { date, .. } if !exclude.contains(&SortableDirective::Price) => {
+            Some(date.to_string())
+        }
+        Line::DateDirective { date, .. }
+            if !exclude.contains(&SortableDirective::DateDirective) =>
+        {
+            Some(date.to_string())
+        }
         _ => None,
     }
 }
@@ -85,13 +101,13 @@ fn extract_date(line: &Line) -> Option<String> {
 /// A segment is either a barrier, a blank line, or a sortable group of entries.
 #[derive(Debug)]
 enum Segment {
-    Barrier(String),
+    Barrier(Vec<String>),
     Blank,
     Entries(Vec<Entry>),
 }
 
 /// Parse input into entries, grouping them into segments.
-fn parse_segments(input: &str) -> Vec<Segment> {
+fn parse_segments(input: &str, exclude: &[SortableDirective]) -> Vec<Segment> {
     let raw_lines: Vec<&str> = input.lines().collect();
     let mut segments: Vec<Segment> = Vec::new();
     let mut current_entries: Vec<Entry> = Vec::new();
@@ -122,7 +138,7 @@ fn parse_segments(input: &str) -> Vec<Segment> {
         if matches!(parsed, Line::BlockDirective { .. }) {
             flush_entry(&mut current_entry, &mut current_entries);
             flush_entries(&mut current_entries, &mut segments);
-            segments.push(Segment::Barrier(raw.to_string()));
+            segments.push(Segment::Barrier(vec![raw.to_string()]));
             continue;
         }
 
@@ -134,6 +150,9 @@ fn parse_segments(input: &str) -> Vec<Segment> {
                     entry.time = parse_time(value);
                 }
                 entry.lines.push(raw.to_string());
+            } else if let Some(Segment::Barrier(lines)) = segments.last_mut() {
+                // Continuation line after a barrier — attach to the barrier
+                lines.push(raw.to_string());
             } else {
                 current_entry = Some(Entry {
                     lines: vec![raw.to_string()],
@@ -142,7 +161,7 @@ fn parse_segments(input: &str) -> Vec<Segment> {
                 });
             }
         } else {
-            let date = extract_date(&parsed);
+            let date = extract_date(&parsed, exclude);
             if date.is_some() {
                 // Dated directive — starts a new sortable entry
                 flush_entry(&mut current_entry, &mut current_entries);
@@ -155,7 +174,7 @@ fn parse_segments(input: &str) -> Vec<Segment> {
                 // Undated top-level line (comment, include, option, etc.) — treat as barrier
                 flush_entry(&mut current_entry, &mut current_entries);
                 flush_entries(&mut current_entries, &mut segments);
-                segments.push(Segment::Barrier(raw.to_string()));
+                segments.push(Segment::Barrier(vec![raw.to_string()]));
             }
         }
     }
@@ -305,8 +324,13 @@ fn sort_entries(mut entries: Vec<Entry>, timeless: TimelessPosition) -> Vec<Entr
     result
 }
 
-pub fn sort_input(input: &str, descending: bool, timeless: TimelessPosition) -> String {
-    let segments = parse_segments(input);
+pub fn sort_input(
+    input: &str,
+    descending: bool,
+    timeless: TimelessPosition,
+    exclude: &[SortableDirective],
+) -> String {
+    let segments = parse_segments(input, exclude);
 
     let mut output = String::new();
 
@@ -379,10 +403,12 @@ pub fn sort_input(input: &str, descending: bool, timeless: TimelessPosition) -> 
 
     for segment in segments {
         match segment {
-            Segment::Barrier(line) => {
+            Segment::Barrier(lines) => {
                 flush_compartment(&mut compartment_items, &mut output, descending, timeless);
-                output.push_str(&line);
-                output.push('\n');
+                for line in &lines {
+                    output.push_str(line);
+                    output.push('\n');
+                }
             }
             Segment::Blank => {
                 compartment_items.push(CompartmentItem::Blank);

@@ -1,5 +1,5 @@
 use beanfmt::config::FileConfig;
-use beanfmt::options::{SortOrder, TimelessPosition};
+use beanfmt::options::{SortOrder, SortableDirective, TimelessPosition};
 use beanfmt::recursive::format_recursive;
 use clap::{ArgAction, Parser};
 use std::fs;
@@ -58,6 +58,10 @@ struct Cli {
     #[arg(long, value_enum)]
     sort_timeless: Option<TimelessPosition>,
 
+    /// Directive types to exclude from sorting; excluded directives act as sort barriers (comma-separated)
+    #[arg(long, value_enum, value_delimiter = ',')]
+    sort_exclude: Option<Vec<SortableDirective>>,
+
     /// Recursively format included files
     #[arg(long)]
     recursive: bool,
@@ -104,6 +108,7 @@ impl Cli {
             fixed_cjk_width,
             sort,
             sort_timeless: self.sort_timeless,
+            sort_exclude: self.sort_exclude.clone(),
         }
     }
 }

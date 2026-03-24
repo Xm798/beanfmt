@@ -53,6 +53,8 @@ export async function activate(
         const fixedCJKWidth = config.get<boolean>("fixedCJKWidth", true);
         const sort = config.get<string>("sort", "off");
         const sortTimeless = config.get<string>("sortTimeless", "begin");
+        const sortExcludeRaw = config.get<string[]>("sortExclude", []);
+        const sortExclude = sortExcludeRaw.length > 0 ? sortExcludeRaw : undefined;
 
         const input = document.getText().replace(/\r\n?/g, "\n");
 
@@ -68,6 +70,7 @@ export async function activate(
             fixedCJKWidth,
             sort,
             sortTimeless,
+            sortExclude,
           );
 
           if (result === input) {

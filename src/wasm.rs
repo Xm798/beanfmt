@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
+use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
 
 fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
     match s.to_ascii_lowercase().as_str() {
@@ -34,7 +34,16 @@ pub fn format(
     fixed_cjk_width: bool,
     sort: &str,
     sort_timeless: &str,
+    sort_exclude: Option<Vec<String>>,
 ) -> Result<String, JsError> {
+    let sort_exclude = match sort_exclude {
+        Some(items) => items
+            .iter()
+            .map(|s| s.parse::<SortableDirective>())
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|msg| JsError::new(&msg))?,
+        None => Vec::new(),
+    };
     let options = Options {
         indent,
         currency_column,
@@ -44,6 +53,7 @@ pub fn format(
         fixed_cjk_width,
         sort: parse_sort(sort)?,
         sort_timeless: parse_timeless(sort_timeless)?,
+        sort_exclude,
     };
 
     Ok(crate::format(input, &options))

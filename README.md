@@ -79,6 +79,8 @@ beanfmt --thousands add --sort ledger.beancount
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
 | `--sort [MODE]` / `--no-sort` | `off` | Sort entries by date: `asc` (default if bare `--sort`), `desc`, `off` |
+| `--sort-timeless <POS>` | `begin` | Where to place timeless entries within a day: `begin`, `end` |
+| `--sort-exclude <TYPES>` | (none) | Comma-separated directive types to exclude from sorting; excluded directives act as sort barriers. Values: `transaction`, `balance`, `open`, `close`, `price`, `date-directive` |
 | `--recursive` | off | Follow and format `include`d files |
 | `-w, --write` | off | Write output back to file (in-place) |
 | `--no-config` | off | Skip loading configuration files |
@@ -102,6 +104,8 @@ thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
 sort = "asc"    # "asc", "desc", "off", or true/false
+sort_timeless = "begin"  # "begin" or "end"
+sort_exclude = ["open", "close"]  # excluded types act as sort barriers
 ```
 
 All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
@@ -158,7 +162,9 @@ Available settings:
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
 | `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |
-| `beanfmt.sort` | `false` | Sort entries by date |
+| `beanfmt.sort` | `"off"` | Sort entries by date: `"asc"`, `"desc"`, `"off"` |
+| `beanfmt.sortTimeless` | `"begin"` | Timeless entry position within a day: `"begin"`, `"end"` |
+| `beanfmt.sortExclude` | `[]` | Directive types to exclude from sorting (act as sort barriers) |
 
 ## License
 

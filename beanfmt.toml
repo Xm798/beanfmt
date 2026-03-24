@@ -1,3 +1,4 @@
+#:schema https://raw.githubusercontent.com/Xm798/beanfmt/master/beanfmt.schema.json
 # beanfmt configuration reference
 #
 # Place this file as:
@@ -39,3 +40,10 @@ sort = "off"
 #   "end"   — after timed entries
 # Multiple timeless entries preserve their relative order.
 sort_timeless = "begin"
+
+# Directive types to exclude from sorting (default: [])
+# Excluded directives act as sort barriers, preventing entries on either side
+# from being reordered across them. Their continuation lines (postings, metadata)
+# stay attached.
+# Valid values: "transaction", "balance", "open", "close", "price", "date-directive"
+# sort_exclude = ["open", "close"]

@@ -10,6 +10,7 @@ declare module "*/wasm" {
     fixed_cjk_width: boolean,
     sort: string,
     sort_timeless: string,
+    sort_exclude: string[] | undefined,
   ): string;
   export function format_default(input: string): string;
 }
