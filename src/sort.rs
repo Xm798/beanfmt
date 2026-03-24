@@ -89,10 +89,22 @@ fn extract_date(line: &Line, exclude: &[SortableDirective]) -> Option<String> {
         Line::Price { date, .. } if !exclude.contains(&SortableDirective::Price) => {
             Some(date.to_string())
         }
-        Line::DateDirective { date, .. }
-            if !exclude.contains(&SortableDirective::DateDirective) =>
-        {
-            Some(date.to_string())
+        Line::DateDirective { date, keyword, .. } => {
+            let directive = match *keyword {
+                "pad" => SortableDirective::Pad,
+                "note" => SortableDirective::Note,
+                "document" => SortableDirective::Document,
+                "event" => SortableDirective::Event,
+                "custom" => SortableDirective::Custom,
+                "query" => SortableDirective::Query,
+                "commodity" => SortableDirective::Commodity,
+                _ => return None,
+            };
+            if !exclude.contains(&directive) {
+                Some(date.to_string())
+            } else {
+                None
+            }
         }
         _ => None,
     }

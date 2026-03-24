@@ -784,3 +784,118 @@ fn sort_exclude_open_with_meta_stays_attached() {
 ";
     assert_eq!(result, expected);
 }
+
+#[test]
+fn sort_exclude_pad_as_barrier() {
+    let input = "\
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+2024-01-02 pad Assets:Checking Assets:Equity
+2024-01-01 * \"A\"
+  Assets:Bank  100 USD
+";
+    let exclude = &[SortableDirective::Pad];
+    let result = sort_input(input, false, TimelessPosition::Begin, exclude);
+    // pad is a barrier: txn C stays before pad, txn A stays after
+    assert_eq!(result, input);
+}
+
+#[test]
+fn sort_exclude_note_as_barrier() {
+    let input = "\
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+2024-01-02 note Assets:Checking \"Some note\"
+2024-01-01 * \"A\"
+  Assets:Bank  100 USD
+";
+    let exclude = &[SortableDirective::Note];
+    let result = sort_input(input, false, TimelessPosition::Begin, exclude);
+    assert_eq!(result, input);
+}
+
+#[test]
+fn sort_exclude_pad_not_excluded_participates_in_sort() {
+    let input = "\
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+2024-01-01 pad Assets:Checking Assets:Equity
+2024-01-02 * \"B\"
+  Assets:Bank  200 USD
+";
+    let expected = "\
+2024-01-01 pad Assets:Checking Assets:Equity
+2024-01-02 * \"B\"
+  Assets:Bank  200 USD
+2024-01-03 * \"C\"
+  Assets:Bank  300 USD
+";
+    // pad is NOT excluded, so it participates in sorting
+    let result = sort_input(input, false, TimelessPosition::Begin, &[]);
+    assert_eq!(result, expected);
+}
+
+#[test]
+fn sortable_directive_from_str_round_trip() {
+    for name in &[
+        "transaction",
+        "balance",
+        "open",
+        "close",
+        "price",
+        "pad",
+        "note",
+        "document",
+        "event",
+        "custom",
+        "query",
+        "commodity",
+    ] {
+        let parsed: SortableDirective = name.parse().unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(parsed.to_string(), *name, "round-trip failed for {name}");
+    }
+}
+
+#[test]
+fn sortable_directive_txn_alias() {
+    assert_eq!(
+        "txn".parse::<SortableDirective>().unwrap(),
+        SortableDirective::Transaction
+    );
+}
+
+#[test]
+fn sortable_directive_invalid() {
+    assert!("date-directive".parse::<SortableDirective>().is_err());
+    assert!("invalid".parse::<SortableDirective>().is_err());
+    assert!("".parse::<SortableDirective>().is_err());
+}
+
+#[test]
+fn all_date_directive_keywords_sortable() {
+    // Ensures every keyword accepted by the parser is handled by extract_date.
+    let keywords = [
+        "pad",
+        "note",
+        "document",
+        "event",
+        "custom",
+        "query",
+        "commodity",
+    ];
+    for kw in &keywords {
+        // Place the directive after a later-dated txn; if sortable it should sort before.
+        let input = format!(
+            "2024-01-20 * \"Later\"\n  Assets:Bank  100 USD\n2024-01-10 {kw} Assets:Bank \"test\"\n"
+        );
+        let sorted = sort_input(&input, false, TimelessPosition::Begin, &[]);
+        let kw_pos = sorted
+            .find(&format!("2024-01-10 {kw}"))
+            .unwrap_or_else(|| panic!("{kw} missing"));
+        let txn_pos = sorted.find("2024-01-20 *").expect("txn missing");
+        assert!(
+            kw_pos < txn_pos,
+            "keyword {kw} (date 01-10) should sort before txn (date 01-20), got:\n{sorted}"
+        );
+    }
+}

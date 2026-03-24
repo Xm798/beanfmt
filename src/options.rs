@@ -8,8 +8,13 @@ pub enum SortableDirective {
     Open,
     Close,
     Price,
-    #[cfg_attr(feature = "cli", value(name = "date-directive"))]
-    DateDirective,
+    Pad,
+    Note,
+    Document,
+    Event,
+    Custom,
+    Query,
+    Commodity,
 }
 
 impl FromStr for SortableDirective {
@@ -22,9 +27,15 @@ impl FromStr for SortableDirective {
             "open" => Ok(SortableDirective::Open),
             "close" => Ok(SortableDirective::Close),
             "price" => Ok(SortableDirective::Price),
-            "date-directive" | "date_directive" => Ok(SortableDirective::DateDirective),
+            "pad" => Ok(SortableDirective::Pad),
+            "note" => Ok(SortableDirective::Note),
+            "document" => Ok(SortableDirective::Document),
+            "event" => Ok(SortableDirective::Event),
+            "custom" => Ok(SortableDirective::Custom),
+            "query" => Ok(SortableDirective::Query),
+            "commodity" => Ok(SortableDirective::Commodity),
             other => Err(format!(
-                "invalid directive: {other:?}, expected one of: transaction, balance, open, close, price, date-directive"
+                "invalid directive: {other:?}, expected one of: transaction, balance, open, close, price, pad, note, document, event, custom, query, commodity"
             )),
         }
     }
@@ -38,7 +49,13 @@ impl std::fmt::Display for SortableDirective {
             SortableDirective::Open => write!(f, "open"),
             SortableDirective::Close => write!(f, "close"),
             SortableDirective::Price => write!(f, "price"),
-            SortableDirective::DateDirective => write!(f, "date-directive"),
+            SortableDirective::Pad => write!(f, "pad"),
+            SortableDirective::Note => write!(f, "note"),
+            SortableDirective::Document => write!(f, "document"),
+            SortableDirective::Event => write!(f, "event"),
+            SortableDirective::Custom => write!(f, "custom"),
+            SortableDirective::Query => write!(f, "query"),
+            SortableDirective::Commodity => write!(f, "commodity"),
         }
     }
 }

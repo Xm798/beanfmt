@@ -63,7 +63,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "enum": ["transaction", "balance", "open", "close", "price", "date-directive"]
+        "enum": ["transaction", "balance", "open", "close", "price", "pad", "note", "document", "event", "custom", "query", "commodity"]
       },
       "default": [],
       "description": "Directive types to exclude from sorting. Excluded directives act as sort barriers."

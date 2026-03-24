@@ -80,7 +80,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
 | `--sort [MODE]` / `--no-sort` | `off` | Sort entries by date: `asc` (default if bare `--sort`), `desc`, `off` |
 | `--sort-timeless <POS>` | `begin` | Where to place timeless entries within a day: `begin`, `end` |
-| `--sort-exclude <TYPES>` | (none) | Comma-separated directive types to exclude from sorting; excluded directives act as sort barriers. Values: `transaction`, `balance`, `open`, `close`, `price`, `date-directive` |
+| `--sort-exclude <TYPES>` | (none) | Comma-separated directive types to exclude from sorting; excluded directives act as sort barriers. Values: `transaction`, `balance`, `open`, `close`, `price`, `pad`, `note`, `document`, `event`, `custom`, `query`, `commodity` |
 | `--recursive` | off | Follow and format `include`d files |
 | `-w, --write` | off | Write output back to file (in-place) |
 | `--no-config` | off | Skip loading configuration files |
@@ -138,7 +138,7 @@ import { format, format_default } from "beanfmt";
 const output = format_default(source);
 
 // Format with full options
-const output = format(source, 4, 70, 75, "keep", false, true, false);
+const output = format(source, 4, 70, 75, "keep", false, true, "off", "begin", undefined);
 ```
 
 ### VSCode

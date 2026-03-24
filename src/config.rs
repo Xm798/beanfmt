@@ -338,6 +338,27 @@ thousands = "add"
     }
 
     #[test]
+    fn load_sort_exclude_from_toml() {
+        let config: FileConfig = toml::from_str(r#"sort_exclude = ["pad", "note"]"#).unwrap();
+        assert_eq!(
+            config.sort_exclude,
+            Some(vec![SortableDirective::Pad, SortableDirective::Note])
+        );
+    }
+
+    #[test]
+    fn load_sort_exclude_invalid_directive() {
+        let result: Result<FileConfig, _> = toml::from_str(r#"sort_exclude = ["date-directive"]"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_sort_exclude_empty_array() {
+        let config: FileConfig = toml::from_str(r#"sort_exclude = []"#).unwrap();
+        assert_eq!(config.sort_exclude, Some(vec![]));
+    }
+
+    #[test]
     fn cli_overrides_project_overrides_global() {
         let global = FileConfig {
             indent: Some(2),
