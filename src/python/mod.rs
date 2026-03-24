@@ -2,7 +2,7 @@ use pyo3::exceptions::{PyOSError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyBool;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator};
+use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -26,6 +26,11 @@ fn parse_sort(obj: &Bound<'_, PyAny>) -> PyResult<SortOrder> {
     s.parse().map_err(|msg: String| PyValueError::new_err(msg))
 }
 
+fn parse_timeless(s: &str) -> PyResult<TimelessPosition> {
+    s.parse().map_err(|msg: String| PyValueError::new_err(msg))
+}
+
+#[allow(clippy::too_many_arguments)]
 fn build_options(
     indent: Option<usize>,
     currency_column: Option<usize>,
@@ -34,6 +39,7 @@ fn build_options(
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
+    sort_timeless: Option<TimelessPosition>,
 ) -> PyResult<Options> {
     let defaults = Options::default();
     let ts = match thousands_separator {
@@ -48,6 +54,7 @@ fn build_options(
         spaces_in_braces: spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
         sort: sort.unwrap_or(defaults.sort),
+        sort_timeless: sort_timeless.unwrap_or(defaults.sort_timeless),
     })
 }
 
@@ -69,7 +76,9 @@ impl PyOptions {
         spaces_in_braces = None,
         fixed_cjk_width = None,
         sort = None,
+        sort_timeless = None,
     ))]
+    #[allow(clippy::too_many_arguments)]
     fn new(
         indent: Option<usize>,
         currency_column: Option<usize>,
@@ -78,8 +87,10 @@ impl PyOptions {
         spaces_in_braces: Option<bool>,
         fixed_cjk_width: Option<bool>,
         sort: Option<&Bound<'_, PyAny>>,
+        sort_timeless: Option<String>,
     ) -> PyResult<Self> {
         let sort = sort.map(parse_sort).transpose()?;
+        let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
@@ -88,6 +99,7 @@ impl PyOptions {
             spaces_in_braces,
             fixed_cjk_width,
             sort,
+            sort_timeless,
         )?;
         Ok(Self { inner })
     }
@@ -104,9 +116,14 @@ impl PyOptions {
             SortOrder::Asc => "'asc'",
             SortOrder::Desc => "'desc'",
         };
+        let sort_timeless = match o.sort_timeless {
+            TimelessPosition::Begin => "'begin'",
+            TimelessPosition::End => "'end'",
+        };
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, \
-             thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={})",
+             thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
+             sort_timeless={})",
             o.indent,
             o.currency_column,
             o.cost_column,
@@ -114,6 +131,7 @@ impl PyOptions {
             if o.spaces_in_braces { "True" } else { "False" },
             if o.fixed_cjk_width { "True" } else { "False" },
             sort,
+            sort_timeless,
         )
     }
 }
@@ -130,6 +148,7 @@ fn resolve_options(
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
+    sort_timeless: Option<TimelessPosition>,
 ) -> PyResult<Options> {
     let base = match options {
         Some(o) => o.inner.clone(),
@@ -149,6 +168,7 @@ fn resolve_options(
         spaces_in_braces: spaces_in_braces.unwrap_or(base.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(base.fixed_cjk_width),
         sort: sort.unwrap_or(base.sort),
+        sort_timeless: sort_timeless.unwrap_or(base.sort_timeless),
     })
 }
 
@@ -164,6 +184,7 @@ fn resolve_options(
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
+    sort_timeless = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format(
@@ -176,8 +197,10 @@ fn format(
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
+    sort_timeless: Option<String>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -187,6 +210,7 @@ fn format(
         spaces_in_braces,
         fixed_cjk_width,
         sort,
+        sort_timeless,
     )?;
     Ok(crate::format(input, &opts))
 }
@@ -203,6 +227,7 @@ fn format(
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
+    sort_timeless = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_file(
@@ -215,8 +240,10 @@ fn format_file(
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
+    sort_timeless: Option<String>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -226,6 +253,7 @@ fn format_file(
         spaces_in_braces,
         fixed_cjk_width,
         sort,
+        sort_timeless,
     )?;
     let content =
         std::fs::read_to_string(path).map_err(|e| PyOSError::new_err(format!("{path}: {e}")))?;
@@ -245,6 +273,7 @@ fn format_file(
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
+    sort_timeless = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_recursive(
@@ -257,10 +286,12 @@ fn format_recursive(
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
+    sort_timeless: Option<String>,
 ) -> PyResult<Vec<(String, String)>> {
     use std::path::Path;
 
     let sort = sort.map(parse_sort).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
 
     let p = Path::new(path);
     if !p.exists() {
@@ -278,6 +309,7 @@ fn format_recursive(
         spaces_in_braces,
         fixed_cjk_width,
         sort,
+        sort_timeless,
     )?;
 
     let results = crate::recursive::format_recursive(p, &opts);

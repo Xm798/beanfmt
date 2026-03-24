@@ -78,7 +78,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
-| `--sort` / `--no-sort` | off | Sort entries by date |
+| `--sort [MODE]` / `--no-sort` | `off` | Sort entries by date: `asc` (default if bare `--sort`), `desc`, `off` |
 | `--recursive` | off | Follow and format `include`d files |
 | `-w, --write` | off | Write output back to file (in-place) |
 | `--no-config` | off | Skip loading configuration files |
@@ -101,10 +101,10 @@ cost_column = 65
 thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
-sort = false
+sort = "asc"    # "asc", "desc", "off", or true/false
 ```
 
-All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading.
+All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
 
 ### Python
 

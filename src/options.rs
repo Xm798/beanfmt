@@ -30,6 +30,27 @@ impl FromStr for SortOrder {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+pub enum TimelessPosition {
+    Begin,
+    End,
+}
+
+impl FromStr for TimelessPosition {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "begin" => Ok(TimelessPosition::Begin),
+            "end" => Ok(TimelessPosition::End),
+            other => Err(format!(
+                "invalid sort_timeless: {other:?}, expected \"begin\" or \"end\""
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     pub indent: usize,
@@ -39,6 +60,7 @@ pub struct Options {
     pub spaces_in_braces: bool,
     pub fixed_cjk_width: bool,
     pub sort: SortOrder,
+    pub sort_timeless: TimelessPosition,
 }
 
 impl Options {
@@ -57,6 +79,7 @@ impl Default for Options {
             spaces_in_braces: false,
             fixed_cjk_width: true,
             sort: SortOrder::Off,
+            sort_timeless: TimelessPosition::Begin,
         }
     }
 }

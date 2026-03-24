@@ -21,8 +21,8 @@ pub fn format(input: &str, options: &Options) -> String {
     // Step 1: Sort if enabled
     let working: Cow<str> = match options.sort {
         SortOrder::Off => Cow::Borrowed(input),
-        SortOrder::Asc => Cow::Owned(sort::sort_input(input, false)),
-        SortOrder::Desc => Cow::Owned(sort::sort_input(input, true)),
+        SortOrder::Asc => Cow::Owned(sort::sort_input(input, false, options.sort_timeless)),
+        SortOrder::Desc => Cow::Owned(sort::sort_input(input, true, options.sort_timeless)),
     };
 
     // Step 2: Parse, normalize, and align each line

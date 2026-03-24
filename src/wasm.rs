@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator};
+use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
 
 fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
     match s.to_ascii_lowercase().as_str() {
@@ -17,6 +17,10 @@ fn parse_sort(s: &str) -> Result<SortOrder, JsError> {
     s.parse().map_err(|msg: String| JsError::new(&msg))
 }
 
+fn parse_timeless(s: &str) -> Result<TimelessPosition, JsError> {
+    s.parse().map_err(|msg: String| JsError::new(&msg))
+}
+
 /// Format a beancount document with full options.
 #[wasm_bindgen]
 #[allow(clippy::too_many_arguments)]
@@ -29,6 +33,7 @@ pub fn format(
     spaces_in_braces: bool,
     fixed_cjk_width: bool,
     sort: &str,
+    sort_timeless: &str,
 ) -> Result<String, JsError> {
     let options = Options {
         indent,
@@ -38,6 +43,7 @@ pub fn format(
         spaces_in_braces,
         fixed_cjk_width,
         sort: parse_sort(sort)?,
+        sort_timeless: parse_timeless(sort_timeless)?,
     };
 
     Ok(crate::format(input, &options))

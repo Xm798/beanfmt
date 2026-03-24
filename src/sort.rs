@@ -1,4 +1,5 @@
 use crate::line::{Line, parse_line};
+use crate::options::TimelessPosition;
 use regex::Regex;
 use std::sync::LazyLock;
 
@@ -158,14 +159,18 @@ fn parse_segments(input: &str) -> Vec<Segment> {
     segments
 }
 
-fn sort_key(entry: &Entry) -> (&str, &str) {
-    (
-        entry.date.as_deref().unwrap_or(""),
-        entry.time.as_deref().unwrap_or(""),
-    )
+fn sort_key(entry: &Entry, timeless: TimelessPosition) -> (&str, &str) {
+    let time = match &entry.time {
+        Some(t) => t.as_str(),
+        None => match timeless {
+            TimelessPosition::Begin => "",
+            TimelessPosition::End => "\x7f",
+        },
+    };
+    (entry.date.as_deref().unwrap_or(""), time)
 }
 
-fn can_go_before(a: &Entry, b: &Entry) -> bool {
+fn can_go_before(a: &Entry, b: &Entry, timeless: TimelessPosition) -> bool {
     match (&a.date, &b.date) {
         (Some(da), Some(db)) => {
             if da < db {
@@ -177,14 +182,19 @@ fn can_go_before(a: &Entry, b: &Entry) -> bool {
             // Same date
             match (&a.time, &b.time) {
                 (Some(ta), Some(tb)) => ta <= tb,
-                _ => true,
+                (None, Some(_)) => timeless == TimelessPosition::Begin,
+                (Some(_), None) => timeless == TimelessPosition::End,
+                (None, None) => true,
             }
         }
         _ => true,
     }
 }
 
-fn split_sorted_unsorted(entries: &[Entry]) -> (Vec<usize>, Vec<usize>) {
+fn split_sorted_unsorted(
+    entries: &[Entry],
+    timeless: TimelessPosition,
+) -> (Vec<usize>, Vec<usize>) {
     if entries.is_empty() {
         return (vec![], vec![]);
     }
@@ -194,7 +204,7 @@ fn split_sorted_unsorted(entries: &[Entry]) -> (Vec<usize>, Vec<usize>) {
     let mut predecessors: Vec<Option<usize>> = vec![None; entries.len()];
 
     for i in 0..entries.len() {
-        let pos = tails.partition_point(|&t| can_go_before(&entries[t], &entries[i]));
+        let pos = tails.partition_point(|&t| can_go_before(&entries[t], &entries[i], timeless));
 
         if pos == tails.len() {
             tails.push(i);
@@ -225,13 +235,19 @@ fn split_sorted_unsorted(entries: &[Entry]) -> (Vec<usize>, Vec<usize>) {
     (lis_indices, unsorted)
 }
 
-fn merge_entries(entries: &[Entry], sorted_idx: &[usize], unsorted_idx: &[usize]) -> Vec<usize> {
+fn merge_entries(
+    entries: &[Entry],
+    sorted_idx: &[usize],
+    unsorted_idx: &[usize],
+    timeless: TimelessPosition,
+) -> Vec<usize> {
     if unsorted_idx.is_empty() {
         return sorted_idx.to_vec();
     }
 
     let mut to_insert: Vec<usize> = unsorted_idx.to_vec();
-    to_insert.sort_by(|&a, &b| sort_key(&entries[a]).cmp(&sort_key(&entries[b])));
+    to_insert
+        .sort_by(|&a, &b| sort_key(&entries[a], timeless).cmp(&sort_key(&entries[b], timeless)));
 
     let mut result = Vec::with_capacity(entries.len());
     let mut si = 0;
@@ -240,7 +256,7 @@ fn merge_entries(entries: &[Entry], sorted_idx: &[usize], unsorted_idx: &[usize]
     while si < sorted_idx.len() && ui < to_insert.len() {
         let s = sorted_idx[si];
         let u = to_insert[ui];
-        if can_go_before(&entries[u], &entries[s]) {
+        if can_go_before(&entries[u], &entries[s], timeless) {
             result.push(u);
             ui += 1;
         } else {
@@ -260,17 +276,17 @@ fn merge_entries(entries: &[Entry], sorted_idx: &[usize], unsorted_idx: &[usize]
     result
 }
 
-fn sort_entries(mut entries: Vec<Entry>) -> Vec<Entry> {
+fn sort_entries(mut entries: Vec<Entry>, timeless: TimelessPosition) -> Vec<Entry> {
     if entries.len() <= 1 {
         return entries;
     }
 
-    let (sorted_idx, unsorted_idx) = split_sorted_unsorted(&entries);
+    let (sorted_idx, unsorted_idx) = split_sorted_unsorted(&entries, timeless);
     if unsorted_idx.is_empty() {
         return entries;
     }
 
-    let order = merge_entries(&entries, &sorted_idx, &unsorted_idx);
+    let order = merge_entries(&entries, &sorted_idx, &unsorted_idx, timeless);
 
     // Reorder in-place using the index mapping
     let mut result = Vec::with_capacity(entries.len());
@@ -282,7 +298,7 @@ fn sort_entries(mut entries: Vec<Entry>) -> Vec<Entry> {
     result
 }
 
-pub fn sort_input(input: &str, descending: bool) -> String {
+pub fn sort_input(input: &str, descending: bool, timeless: TimelessPosition) -> String {
     let segments = parse_segments(input);
 
     let mut output = String::new();
@@ -295,66 +311,78 @@ pub fn sort_input(input: &str, descending: bool) -> String {
 
     let mut compartment_items: Vec<CompartmentItem> = Vec::new();
 
-    let flush_compartment =
-        |items: &mut Vec<CompartmentItem>, output: &mut String, descending: bool| {
-            // Collect all entries from the compartment
-            let mut all_entries: Vec<Entry> = Vec::new();
-            let mut separator_positions: Vec<usize> = Vec::new(); // after which entry index to insert blank
+    let flush_compartment = |items: &mut Vec<CompartmentItem>,
+                             output: &mut String,
+                             descending: bool,
+                             timeless: TimelessPosition| {
+        // Collect all entries from the compartment
+        let mut all_entries: Vec<Entry> = Vec::new();
+        let mut separator_positions: Vec<usize> = Vec::new(); // after which entry index to insert blank
 
-            for item in items.drain(..) {
-                match item {
-                    CompartmentItem::Entries(entries) => {
-                        all_entries.extend(entries);
+        for item in items.drain(..) {
+            match item {
+                CompartmentItem::Entries(entries) => {
+                    all_entries.extend(entries);
+                }
+                CompartmentItem::Blank => {
+                    if !all_entries.is_empty() {
+                        separator_positions.push(all_entries.len());
+                    } else {
+                        // Leading blank
+                        output.push('\n');
                     }
-                    CompartmentItem::Blank => {
-                        if !all_entries.is_empty() {
-                            separator_positions.push(all_entries.len());
-                        } else {
-                            // Leading blank
-                            output.push('\n');
-                        }
-                    }
                 }
             }
+        }
 
-            if all_entries.is_empty() {
-                return;
+        if all_entries.is_empty() {
+            return;
+        }
+
+        // When descending, reverse() flips within-day order too,
+        // so flip the timeless position to compensate.
+        let effective_timeless = if descending {
+            match timeless {
+                TimelessPosition::Begin => TimelessPosition::End,
+                TimelessPosition::End => TimelessPosition::Begin,
             }
+        } else {
+            timeless
+        };
+        let mut sorted = sort_entries(all_entries, effective_timeless);
+        if descending {
+            sorted.reverse();
+        }
 
-            let mut sorted = sort_entries(all_entries);
-            if descending {
-                sorted.reverse();
-            }
-
-            // Emit entries with blank line separators between them
-            for (i, entry) in sorted.iter().enumerate() {
-                if i > 0 {
-                    output.push('\n');
-                }
-                for line in &entry.lines {
-                    output.push_str(line);
-                    output.push('\n');
-                }
-            }
-
-            // If there were trailing blanks beyond what we used as separators, they were already
-            // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
-            // from the original are trailing blanks for the compartment.
-            let used_separators = if sorted.len() > 1 {
-                sorted.len() - 1
-            } else {
-                0
-            };
-            let total_blanks = separator_positions.len();
-            for _ in used_separators..total_blanks {
+        // Emit entries with blank line separators between them
+        for (i, entry) in sorted.iter().enumerate() {
+            if i > 0 {
                 output.push('\n');
             }
+            for line in &entry.lines {
+                output.push_str(line);
+                output.push('\n');
+            }
+        }
+
+        // If there were trailing blanks beyond what we used as separators, they were already
+        // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
+        // from the original are trailing blanks for the compartment.
+        let used_separators = if sorted.len() > 1 {
+            sorted.len() - 1
+        } else {
+            0
         };
+        let total_blanks = separator_positions.len();
+        for _ in used_separators..total_blanks {
+            output.push('\n');
+        }
+    };
 
     for segment in segments {
         match segment {
             Segment::Barrier(line) => {
-                flush_compartment(&mut compartment_items, &mut output, descending);
+                flush_compartment(&mut compartment_items, &mut output, descending, timeless);
                 output.push_str(&line);
                 output.push('\n');
             }
@@ -366,7 +394,7 @@ pub fn sort_input(input: &str, descending: bool) -> String {
             }
         }
     }
-    flush_compartment(&mut compartment_items, &mut output, descending);
+    flush_compartment(&mut compartment_items, &mut output, descending, timeless);
 
     // Preserve trailing newline behavior
     if !input.ends_with('\n') && output.ends_with('\n') {

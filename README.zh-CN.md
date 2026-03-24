@@ -76,7 +76,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | 千分位分隔符：`add`（添加）、`remove`（移除）、`keep`（保持） |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | 开启 | CJK 双宽度字符对齐 |
-| `--sort` / `--no-sort` | 关闭 | 按日期排序条目 |
+| `--sort [MODE]` / `--no-sort` | `off` | 按日期排序条目：`asc`（默认，单独使用 `--sort` 时）、`desc`、`off` |
 | `--recursive` | 关闭 | 递归格式化 `include` 引入的文件 |
 | `-w, --write` | 关闭 | 将输出写回文件（原地修改） |
 | `--no-config` | 关闭 | 跳过配置文件加载 |
@@ -99,10 +99,10 @@ cost_column = 65
 thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
-sort = false
+sort = "asc"    # "asc"、"desc"、"off"
 ```
 
-所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。
+所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
 
 ### Python
 

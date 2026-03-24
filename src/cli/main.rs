@@ -1,5 +1,5 @@
 use beanfmt::config::FileConfig;
-use beanfmt::options::SortOrder;
+use beanfmt::options::{SortOrder, TimelessPosition};
 use beanfmt::recursive::format_recursive;
 use clap::{ArgAction, Parser};
 use std::fs;
@@ -54,6 +54,10 @@ struct Cli {
     #[arg(long = "no-sort", action = ArgAction::SetTrue, hide = true)]
     no_sort: bool,
 
+    /// Where to place timeless entries within a day (begin or end)
+    #[arg(long, value_enum)]
+    sort_timeless: Option<TimelessPosition>,
+
     /// Recursively format included files
     #[arg(long)]
     recursive: bool,
@@ -99,6 +103,7 @@ impl Cli {
             spaces_in_braces,
             fixed_cjk_width,
             sort,
+            sort_timeless: self.sort_timeless,
         }
     }
 }

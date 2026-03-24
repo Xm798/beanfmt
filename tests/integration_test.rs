@@ -1,5 +1,5 @@
 use beanfmt::format;
-use beanfmt::options::{Options, SortOrder, ThousandsSeparator};
+use beanfmt::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
 
 fn default_opts() -> Options {
     Options::default()
@@ -328,6 +328,30 @@ fn format_with_sort_desc() {
         .map(|l| &l[..10])
         .collect();
     assert_eq!(dates, vec!["2024-01-03", "2024-01-01"]);
+}
+
+#[test]
+fn format_with_sort_timeless_end() {
+    let input = "\
+2024-01-01 * \"No time\"
+    Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+    time: \"09:00\"
+    Expenses:Food  100 USD
+    Assets:Bank
+";
+    let opts = Options {
+        sort: SortOrder::Asc,
+        sort_timeless: TimelessPosition::End,
+        currency_column: 50,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+    assert!(
+        result.find("Has time").unwrap() < result.find("No time").unwrap(),
+        "timed entry should come before timeless with End position"
+    );
 }
 
 #[test]

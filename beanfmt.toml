@@ -1,0 +1,41 @@
+# beanfmt configuration reference
+#
+# Place this file as:
+#   - beanfmt.toml or .beanfmt.toml in your project directory (searched upward)
+#   - ~/.config/beanfmt/config.toml for global defaults
+#
+# Priority: CLI flags > project config > global config > built-in defaults
+# All fields are optional; omitted fields use built-in defaults.
+
+# Number of spaces for indentation (default: 4)
+indent = 4
+
+# Column to align currencies to (default: 70)
+currency_column = 70
+
+# Column to align costs (e.g. {100 USD}) to (default: 75)
+cost_column = 75
+
+# Thousands separator handling: "add", "remove", or "keep" (default: "keep")
+#   "add"    — insert commas: 1000000 → 1,000,000
+#   "remove" — strip commas:  1,000,000 → 1000000
+#   "keep"   — leave as-is
+thousands = "keep"
+
+# Add spaces inside cost braces: { 100 USD } vs {100 USD} (default: false)
+spaces_in_braces = false
+
+# Treat CJK characters as double-width for alignment (default: true)
+fixed_cjk_width = true
+
+# Sort entries by date: "asc", "desc", "off", or true/false (default: "off")
+#   "asc"  — ascending (oldest first)
+#   "desc"        — descending (newest first)
+#   "off" — preserve original order
+sort = "off"
+
+# Where to place entries without time metadata within a day (default: "begin")
+#   "begin" — before timed entries
+#   "end"   — after timed entries
+# Multiple timeless entries preserve their relative order.
+sort_timeless = "begin"

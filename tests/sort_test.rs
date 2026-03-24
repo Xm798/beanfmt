@@ -1,3 +1,4 @@
+use beanfmt::options::TimelessPosition;
 use beanfmt::sort::{parse_time, sort_input};
 
 #[test]
@@ -12,7 +13,7 @@ fn already_sorted_unchanged() {
 2024-01-03 * \"Third\"
   Assets:Bank  300 USD
 ";
-    assert_eq!(sort_input(input, false), input);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), input);
 }
 
 #[test]
@@ -37,7 +38,7 @@ fn out_of_order_sorted_by_date() {
 2024-01-03 * \"Third\"
   Assets:Bank  300 USD
 ";
-    assert_eq!(sort_input(input, false), expected);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -76,7 +77,7 @@ pushtag #trip
 
 poptag #trip
 ";
-    assert_eq!(sort_input(input, false), expected);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -99,7 +100,7 @@ fn time_metadata_sorting() {
   time: \"15:30\"
   Assets:Bank  200 USD
 ";
-    assert_eq!(sort_input(input, false), expected);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -128,7 +129,7 @@ fn prudent_sort_minimal_moves() {
 
 2024-01-05 * \"Five\"
 ";
-    assert_eq!(sort_input(input, false), expected);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -142,7 +143,7 @@ fn entries_without_date_stay_in_place() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    let result = sort_input(input, false);
+    let result = sort_input(input, false, TimelessPosition::Begin);
     assert!(result.contains("; A comment with no date"));
     assert_eq!(result, input);
 }
@@ -160,7 +161,7 @@ fn same_date_preserves_relative_order() {
   Assets:Bank  300 USD
 ";
     // All same date, no time — should preserve original order
-    assert_eq!(sort_input(input, false), input);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), input);
 }
 
 // parse_time tests
@@ -238,7 +239,7 @@ fn parse_time_iso_datetime() {
 
 #[test]
 fn empty_input() {
-    assert_eq!(sort_input("", false), "");
+    assert_eq!(sort_input("", false, TimelessPosition::Begin), "");
 }
 
 #[test]
@@ -247,7 +248,7 @@ fn single_entry() {
 2024-01-01 * \"Only\"
   Assets:Bank  100 USD
 ";
-    assert_eq!(sort_input(input, false), input);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), input);
 }
 
 #[test]
@@ -266,7 +267,7 @@ fn two_entries_reversed() {
 2024-01-02 * \"B\"
   Assets:Bank  200 USD
 ";
-    assert_eq!(sort_input(input, false), expected);
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -282,7 +283,7 @@ fn fully_reversed_five() {
 
 2024-01-01 * \"A\"
 ";
-    let result = sort_input(input, false);
+    let result = sort_input(input, false, TimelessPosition::Begin);
     let dates: Vec<&str> = result
         .lines()
         .filter(|l| l.starts_with("2024"))
@@ -311,7 +312,7 @@ fn unix_timestamp_time_sorting() {
   time: \"1704067200\"
   Assets:Bank  100 USD
 ";
-    let result = sort_input(input, false);
+    let result = sort_input(input, false, TimelessPosition::Begin);
     assert!(
         result.find("Earlier").unwrap() < result.find("Later").unwrap(),
         "Earlier timestamp should come first"
@@ -331,7 +332,7 @@ fn undated_comment_between_transactions_preserved() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    let result = sort_input(input, false);
+    let result = sort_input(input, false, TimelessPosition::Begin);
     assert!(result.contains("; Section divider"));
 }
 
@@ -359,7 +360,7 @@ fn descending_sort_reverses_order() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    assert_eq!(sort_input(input, true), expected);
+    assert_eq!(sort_input(input, true, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -384,7 +385,7 @@ fn descending_sort_out_of_order() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    assert_eq!(sort_input(input, true), expected);
+    assert_eq!(sort_input(input, true, TimelessPosition::Begin), expected);
 }
 
 #[test]
@@ -423,5 +424,178 @@ pushtag #trip
 
 poptag #trip
 ";
-    assert_eq!(sort_input(input, true), expected);
+    assert_eq!(sort_input(input, true, TimelessPosition::Begin), expected);
+}
+
+// TimelessPosition tests
+
+#[test]
+fn timeless_begin_places_before_timed() {
+    let input = "\
+2024-01-01 * \"Has time\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+";
+    let expected = "\
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+  time: \"15:00\"
+  Assets:Bank  200 USD
+";
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
+}
+
+#[test]
+fn timeless_end_places_after_timed() {
+    let input = "\
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+  time: \"09:00\"
+  Assets:Bank  200 USD
+";
+    let expected = "\
+2024-01-01 * \"Has time\"
+  time: \"09:00\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+";
+    assert_eq!(sort_input(input, false, TimelessPosition::End), expected);
+}
+
+#[test]
+fn timeless_end_multiple_preserve_order() {
+    let input = "\
+2024-01-01 * \"No time A\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+  time: \"10:00\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"No time B\"
+  Assets:Bank  300 USD
+";
+    let expected = "\
+2024-01-01 * \"Has time\"
+  time: \"10:00\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"No time A\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"No time B\"
+  Assets:Bank  300 USD
+";
+    assert_eq!(sort_input(input, false, TimelessPosition::End), expected);
+}
+
+#[test]
+fn timeless_end_with_descending() {
+    let input = "\
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+  time: \"09:00\"
+  Assets:Bank  200 USD
+
+2024-01-02 * \"Day 2\"
+  Assets:Bank  300 USD
+";
+    let result = sort_input(input, true, TimelessPosition::End);
+    // Day 2 should come first (descending), then within Jan 1: timed before timeless
+    assert!(result.find("Day 2").unwrap() < result.find("Has time").unwrap());
+    assert!(result.find("Has time").unwrap() < result.find("No time").unwrap());
+}
+
+#[test]
+fn timeless_begin_multiple_preserve_order() {
+    let input = "\
+2024-01-01 * \"Has time\"
+  time: \"10:00\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"No time A\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"No time B\"
+  Assets:Bank  300 USD
+";
+    let expected = "\
+2024-01-01 * \"No time A\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"No time B\"
+  Assets:Bank  300 USD
+
+2024-01-01 * \"Has time\"
+  time: \"10:00\"
+  Assets:Bank  200 USD
+";
+    assert_eq!(sort_input(input, false, TimelessPosition::Begin), expected);
+}
+
+#[test]
+fn timeless_begin_with_descending() {
+    let input = "\
+2024-01-01 * \"No time\"
+  Assets:Bank  100 USD
+
+2024-01-01 * \"Has time\"
+  time: \"09:00\"
+  Assets:Bank  200 USD
+
+2024-01-02 * \"Day 2\"
+  Assets:Bank  300 USD
+";
+    let result = sort_input(input, true, TimelessPosition::Begin);
+    // Descending: Day 2 first, then within Jan 1: timeless before timed (Begin)
+    assert!(result.find("Day 2").unwrap() < result.find("No time").unwrap());
+    assert!(result.find("No time").unwrap() < result.find("Has time").unwrap());
+}
+
+#[test]
+fn all_timed_entries_unaffected_by_timeless_position() {
+    let input = "\
+2024-01-01 * \"Later\"
+  time: \"15:30\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"Earlier\"
+  time: \"09:00\"
+  Assets:Bank  100 USD
+";
+    let result_begin = sort_input(input, false, TimelessPosition::Begin);
+    let result_end = sort_input(input, false, TimelessPosition::End);
+    assert_eq!(result_begin, result_end);
+}
+
+#[test]
+fn timeless_position_from_str_valid() {
+    assert_eq!(
+        "begin".parse::<TimelessPosition>(),
+        Ok(TimelessPosition::Begin)
+    );
+    assert_eq!("end".parse::<TimelessPosition>(), Ok(TimelessPosition::End));
+    assert_eq!(
+        "BEGIN".parse::<TimelessPosition>(),
+        Ok(TimelessPosition::Begin)
+    );
+    assert_eq!("End".parse::<TimelessPosition>(), Ok(TimelessPosition::End));
+}
+
+#[test]
+fn timeless_position_from_str_invalid() {
+    assert!("start".parse::<TimelessPosition>().is_err());
+    assert!("".parse::<TimelessPosition>().is_err());
+    assert!("middle".parse::<TimelessPosition>().is_err());
 }

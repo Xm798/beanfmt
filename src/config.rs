@@ -3,7 +3,7 @@ use serde::de::{self, Deserializer};
 use std::fs;
 use std::path::Path;
 
-use crate::options::{Options, SortOrder, ThousandsSeparator};
+use crate::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
 
 impl<'de> Deserialize<'de> for SortOrder {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -29,6 +29,13 @@ impl<'de> Deserialize<'de> for SortOrder {
     }
 }
 
+impl<'de> Deserialize<'de> for TimelessPosition {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(|msg: String| de::Error::custom(msg))
+    }
+}
+
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct FileConfig {
     pub indent: Option<usize>,
@@ -38,6 +45,7 @@ pub struct FileConfig {
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
     pub sort: Option<SortOrder>,
+    pub sort_timeless: Option<TimelessPosition>,
 }
 
 impl FileConfig {
@@ -50,6 +58,7 @@ impl FileConfig {
             spaces_in_braces: other.spaces_in_braces.or(self.spaces_in_braces),
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
             sort: other.sort.or(self.sort),
+            sort_timeless: other.sort_timeless.or(self.sort_timeless),
         }
     }
 
@@ -73,6 +82,7 @@ impl FileConfig {
             spaces_in_braces: self.spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
             sort: self.sort.unwrap_or(defaults.sort),
+            sort_timeless: self.sort_timeless.unwrap_or(defaults.sort_timeless),
         }
     }
 }
@@ -276,6 +286,45 @@ thousands = "add"
         assert_eq!(options.currency_column, 80);
         assert_eq!(options.cost_column, 75);
         assert_eq!(options.sort, SortOrder::Asc);
+    }
+
+    #[test]
+    fn load_sort_timeless_begin() {
+        let config: FileConfig = toml::from_str(r#"sort_timeless = "begin""#).unwrap();
+        assert_eq!(config.sort_timeless, Some(TimelessPosition::Begin));
+    }
+
+    #[test]
+    fn load_sort_timeless_end() {
+        let config: FileConfig = toml::from_str(r#"sort_timeless = "end""#).unwrap();
+        assert_eq!(config.sort_timeless, Some(TimelessPosition::End));
+    }
+
+    #[test]
+    fn load_sort_timeless_invalid() {
+        let result: Result<FileConfig, _> = toml::from_str(r#"sort_timeless = "middle""#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_sort_timeless_rejects_bool() {
+        let result: Result<FileConfig, _> = toml::from_str("sort_timeless = true");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn merge_sort_timeless_override() {
+        let global = FileConfig {
+            sort_timeless: Some(TimelessPosition::Begin),
+            ..FileConfig::default()
+        };
+        let project = FileConfig {
+            sort_timeless: Some(TimelessPosition::End),
+            ..FileConfig::default()
+        };
+        let merged = global.merge(project);
+        assert_eq!(merged.sort_timeless, Some(TimelessPosition::End));
+        assert_eq!(merged.into_options().sort_timeless, TimelessPosition::End);
     }
 
     #[test]

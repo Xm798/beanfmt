@@ -52,6 +52,7 @@ export async function activate(
         const spacesInBraces = config.get<boolean>("spacesInBraces", false);
         const fixedCJKWidth = config.get<boolean>("fixedCJKWidth", true);
         const sort = config.get<string>("sort", "off");
+        const sortTimeless = config.get<string>("sortTimeless", "begin");
 
         const input = document.getText().replace(/\r\n?/g, "\n");
 
@@ -66,6 +67,7 @@ export async function activate(
             spacesInBraces,
             fixedCJKWidth,
             sort,
+            sortTimeless,
           );
 
           if (result === input) {
