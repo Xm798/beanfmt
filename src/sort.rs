@@ -142,14 +142,21 @@ fn parse_segments(input: &str) -> Vec<Segment> {
                 });
             }
         } else {
-            // New directive or top-level line — starts a new entry
-            flush_entry(&mut current_entry, &mut current_entries);
             let date = extract_date(&parsed);
-            current_entry = Some(Entry {
-                lines: vec![raw.to_string()],
-                date,
-                time: None,
-            });
+            if date.is_some() {
+                // Dated directive — starts a new sortable entry
+                flush_entry(&mut current_entry, &mut current_entries);
+                current_entry = Some(Entry {
+                    lines: vec![raw.to_string()],
+                    date,
+                    time: None,
+                });
+            } else {
+                // Undated top-level line (comment, include, option, etc.) — treat as barrier
+                flush_entry(&mut current_entry, &mut current_entries);
+                flush_entries(&mut current_entries, &mut segments);
+                segments.push(Segment::Barrier(raw.to_string()));
+            }
         }
     }
 
