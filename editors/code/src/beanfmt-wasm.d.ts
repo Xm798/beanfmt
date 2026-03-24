@@ -8,7 +8,7 @@ declare module "*/wasm" {
     thousands: string,
     spaces_in_braces: boolean,
     fixed_cjk_width: boolean,
-    sort: boolean,
+    sort: string,
   ): string;
   export function format_default(input: string): string;
 }

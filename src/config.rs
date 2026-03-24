@@ -1,8 +1,33 @@
 use serde::Deserialize;
+use serde::de::{self, Deserializer};
 use std::fs;
 use std::path::Path;
 
-use crate::options::{Options, ThousandsSeparator};
+use crate::options::{Options, SortOrder, ThousandsSeparator};
+
+impl<'de> Deserialize<'de> for SortOrder {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct SortOrderVisitor;
+
+        impl<'de> de::Visitor<'de> for SortOrderVisitor {
+            type Value = SortOrder;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("a boolean or one of \"asc\", \"desc\", \"off\"")
+            }
+
+            fn visit_bool<E: de::Error>(self, v: bool) -> Result<SortOrder, E> {
+                Ok(if v { SortOrder::Asc } else { SortOrder::Off })
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<SortOrder, E> {
+                v.parse().map_err(|msg: String| de::Error::custom(msg))
+            }
+        }
+
+        deserializer.deserialize_any(SortOrderVisitor)
+    }
+}
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct FileConfig {
@@ -12,7 +37,7 @@ pub struct FileConfig {
     pub thousands: Option<String>,
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
-    pub sort: Option<bool>,
+    pub sort: Option<SortOrder>,
 }
 
 impl FileConfig {
@@ -153,7 +178,43 @@ thousands = "add"
         assert_eq!(config.indent, Some(2));
         assert_eq!(config.currency_column, Some(80));
         assert_eq!(config.thousands, Some("add".to_string()));
-        assert_eq!(config.sort, None);
+        assert!(config.sort.is_none());
+    }
+
+    #[test]
+    fn load_sort_bool_true() {
+        let config: FileConfig = toml::from_str("sort = true").unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Asc));
+    }
+
+    #[test]
+    fn load_sort_bool_false() {
+        let config: FileConfig = toml::from_str("sort = false").unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Off));
+    }
+
+    #[test]
+    fn load_sort_string_asc() {
+        let config: FileConfig = toml::from_str(r#"sort = "asc""#).unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Asc));
+    }
+
+    #[test]
+    fn load_sort_string_desc() {
+        let config: FileConfig = toml::from_str(r#"sort = "desc""#).unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Desc));
+    }
+
+    #[test]
+    fn load_sort_string_off() {
+        let config: FileConfig = toml::from_str(r#"sort = "off""#).unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Off));
+    }
+
+    #[test]
+    fn load_sort_string_true() {
+        let config: FileConfig = toml::from_str(r#"sort = "true""#).unwrap();
+        assert_eq!(config.sort, Some(SortOrder::Asc));
     }
 
     #[test]
@@ -207,14 +268,14 @@ thousands = "add"
             ..FileConfig::default()
         };
         let cli = FileConfig {
-            sort: Some(true),
+            sort: Some(SortOrder::Asc),
             ..FileConfig::default()
         };
         let options = global.merge(project).merge(cli).into_options();
         assert_eq!(options.indent, 2);
         assert_eq!(options.currency_column, 80);
         assert_eq!(options.cost_column, 75);
-        assert!(options.sort);
+        assert_eq!(options.sort, SortOrder::Asc);
     }
 
     #[test]

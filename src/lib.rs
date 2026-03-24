@@ -14,15 +14,15 @@ pub mod sort;
 use align::{align_balance, align_open, align_posting, align_price};
 use line::{Line, parse_line};
 use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
-use options::Options;
+use options::{Options, SortOrder};
 use std::borrow::Cow;
 
 pub fn format(input: &str, options: &Options) -> String {
     // Step 1: Sort if enabled
-    let working: Cow<str> = if options.sort {
-        Cow::Owned(sort::sort_input(input))
-    } else {
-        Cow::Borrowed(input)
+    let working: Cow<str> = match options.sort {
+        SortOrder::Off => Cow::Borrowed(input),
+        SortOrder::Asc => Cow::Owned(sort::sort_input(input, false)),
+        SortOrder::Desc => Cow::Owned(sort::sort_input(input, true)),
     };
 
     // Step 2: Parse, normalize, and align each line

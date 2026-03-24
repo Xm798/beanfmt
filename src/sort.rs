@@ -282,7 +282,7 @@ fn sort_entries(mut entries: Vec<Entry>) -> Vec<Entry> {
     result
 }
 
-pub fn sort_input(input: &str) -> String {
+pub fn sort_input(input: &str, descending: bool) -> String {
     let segments = parse_segments(input);
 
     let mut output = String::new();
@@ -295,62 +295,66 @@ pub fn sort_input(input: &str) -> String {
 
     let mut compartment_items: Vec<CompartmentItem> = Vec::new();
 
-    let flush_compartment = |items: &mut Vec<CompartmentItem>, output: &mut String| {
-        // Collect all entries from the compartment
-        let mut all_entries: Vec<Entry> = Vec::new();
-        let mut separator_positions: Vec<usize> = Vec::new(); // after which entry index to insert blank
+    let flush_compartment =
+        |items: &mut Vec<CompartmentItem>, output: &mut String, descending: bool| {
+            // Collect all entries from the compartment
+            let mut all_entries: Vec<Entry> = Vec::new();
+            let mut separator_positions: Vec<usize> = Vec::new(); // after which entry index to insert blank
 
-        for item in items.drain(..) {
-            match item {
-                CompartmentItem::Entries(entries) => {
-                    all_entries.extend(entries);
-                }
-                CompartmentItem::Blank => {
-                    if !all_entries.is_empty() {
-                        separator_positions.push(all_entries.len());
-                    } else {
-                        // Leading blank
-                        output.push('\n');
+            for item in items.drain(..) {
+                match item {
+                    CompartmentItem::Entries(entries) => {
+                        all_entries.extend(entries);
+                    }
+                    CompartmentItem::Blank => {
+                        if !all_entries.is_empty() {
+                            separator_positions.push(all_entries.len());
+                        } else {
+                            // Leading blank
+                            output.push('\n');
+                        }
                     }
                 }
             }
-        }
 
-        if all_entries.is_empty() {
-            return;
-        }
+            if all_entries.is_empty() {
+                return;
+            }
 
-        let sorted = sort_entries(all_entries);
+            let mut sorted = sort_entries(all_entries);
+            if descending {
+                sorted.reverse();
+            }
 
-        // Emit entries with blank line separators between them
-        for (i, entry) in sorted.iter().enumerate() {
-            if i > 0 {
+            // Emit entries with blank line separators between them
+            for (i, entry) in sorted.iter().enumerate() {
+                if i > 0 {
+                    output.push('\n');
+                }
+                for line in &entry.lines {
+                    output.push_str(line);
+                    output.push('\n');
+                }
+            }
+
+            // If there were trailing blanks beyond what we used as separators, they were already
+            // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
+            // from the original are trailing blanks for the compartment.
+            let used_separators = if sorted.len() > 1 {
+                sorted.len() - 1
+            } else {
+                0
+            };
+            let total_blanks = separator_positions.len();
+            for _ in used_separators..total_blanks {
                 output.push('\n');
             }
-            for line in &entry.lines {
-                output.push_str(line);
-                output.push('\n');
-            }
-        }
-
-        // If there were trailing blanks beyond what we used as separators, they were already
-        // consumed. The number of blanks between N entries = N-1 separators. Any extra blanks
-        // from the original are trailing blanks for the compartment.
-        let used_separators = if sorted.len() > 1 {
-            sorted.len() - 1
-        } else {
-            0
         };
-        let total_blanks = separator_positions.len();
-        for _ in used_separators..total_blanks {
-            output.push('\n');
-        }
-    };
 
     for segment in segments {
         match segment {
             Segment::Barrier(line) => {
-                flush_compartment(&mut compartment_items, &mut output);
+                flush_compartment(&mut compartment_items, &mut output, descending);
                 output.push_str(&line);
                 output.push('\n');
             }
@@ -362,7 +366,7 @@ pub fn sort_input(input: &str) -> String {
             }
         }
     }
-    flush_compartment(&mut compartment_items, &mut output);
+    flush_compartment(&mut compartment_items, &mut output, descending);
 
     // Preserve trailing newline behavior
     if !input.ends_with('\n') && output.ends_with('\n') {

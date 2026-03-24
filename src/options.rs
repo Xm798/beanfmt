@@ -1,9 +1,33 @@
+use std::str::FromStr;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
 pub enum ThousandsSeparator {
     Add,
     Remove,
     Keep,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+pub enum SortOrder {
+    Off,
+    Asc,
+    Desc,
+}
+
+impl FromStr for SortOrder {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "asc" | "true" => Ok(SortOrder::Asc),
+            "desc" => Ok(SortOrder::Desc),
+            "off" | "false" => Ok(SortOrder::Off),
+            other => Err(format!(
+                "invalid sort: {other:?}, expected \"asc\", \"desc\", or \"off\""
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -14,7 +38,7 @@ pub struct Options {
     pub thousands_separator: ThousandsSeparator,
     pub spaces_in_braces: bool,
     pub fixed_cjk_width: bool,
-    pub sort: bool,
+    pub sort: SortOrder,
 }
 
 impl Options {
@@ -32,7 +56,7 @@ impl Default for Options {
             thousands_separator: ThousandsSeparator::Keep,
             spaces_in_braces: false,
             fixed_cjk_width: true,
-            sort: false,
+            sort: SortOrder::Off,
         }
     }
 }

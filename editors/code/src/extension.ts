@@ -51,7 +51,7 @@ export async function activate(
         );
         const spacesInBraces = config.get<boolean>("spacesInBraces", false);
         const fixedCJKWidth = config.get<boolean>("fixedCJKWidth", true);
-        const sort = config.get<boolean>("sort", false);
+        const sort = config.get<string>("sort", "off");
 
         const input = document.getText().replace(/\r\n?/g, "\n");
 

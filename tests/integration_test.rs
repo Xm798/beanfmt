@@ -1,5 +1,5 @@
 use beanfmt::format;
-use beanfmt::options::{Options, ThousandsSeparator};
+use beanfmt::options::{Options, SortOrder, ThousandsSeparator};
 
 fn default_opts() -> Options {
     Options::default()
@@ -292,7 +292,7 @@ fn format_with_sort() {
     Assets:Bank
 ";
     let opts = Options {
-        sort: true,
+        sort: SortOrder::Asc,
         currency_column: 50,
         ..Options::default()
     };
@@ -303,6 +303,31 @@ fn format_with_sort() {
         .map(|l| &l[..10])
         .collect();
     assert_eq!(dates, vec!["2024-01-01", "2024-01-03"]);
+}
+
+#[test]
+fn format_with_sort_desc() {
+    let input = "\
+2024-01-01 * \"A\" \"A\"
+    Expenses:A  10 USD
+    Assets:Bank
+
+2024-01-03 * \"C\" \"C\"
+    Expenses:C  30 USD
+    Assets:Bank
+";
+    let opts = Options {
+        sort: SortOrder::Desc,
+        currency_column: 50,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+    let dates: Vec<&str> = result
+        .lines()
+        .filter(|l| l.starts_with("2024"))
+        .map(|l| &l[..10])
+        .collect();
+    assert_eq!(dates, vec!["2024-01-03", "2024-01-01"]);
 }
 
 #[test]
@@ -379,7 +404,7 @@ fn format_without_sort_preserves_order() {
     Assets:Bank
 ";
     let opts = Options {
-        sort: false,
+        sort: SortOrder::Off,
         currency_column: 50,
         ..Options::default()
     };

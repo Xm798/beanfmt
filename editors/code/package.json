@@ -66,9 +66,10 @@
           "description": "Treat CJK (East Asian) characters as double-width for alignment."
         },
         "beanfmt.sort": {
-          "type": "boolean",
-          "default": false,
-          "description": "Sort entries by date."
+          "type": "string",
+          "enum": ["off", "asc", "desc"],
+          "default": "off",
+          "description": "Sort entries by date: off (no sorting), asc (ascending), or desc (descending)."
         }
       }
     },

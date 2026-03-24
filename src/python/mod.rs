@@ -1,7 +1,8 @@
 use pyo3::exceptions::{PyOSError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::types::PyBool;
 
-use crate::options::{Options, ThousandsSeparator};
+use crate::options::{Options, SortOrder, ThousandsSeparator};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -16,6 +17,15 @@ fn parse_thousands(s: &str) -> PyResult<ThousandsSeparator> {
     }
 }
 
+fn parse_sort(obj: &Bound<'_, PyAny>) -> PyResult<SortOrder> {
+    if obj.is_instance_of::<PyBool>() {
+        let v: bool = obj.extract()?;
+        return Ok(if v { SortOrder::Asc } else { SortOrder::Off });
+    }
+    let s: String = obj.extract()?;
+    s.parse().map_err(|msg: String| PyValueError::new_err(msg))
+}
+
 fn build_options(
     indent: Option<usize>,
     currency_column: Option<usize>,
@@ -23,7 +33,7 @@ fn build_options(
     thousands_separator: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
-    sort: Option<bool>,
+    sort: Option<SortOrder>,
 ) -> PyResult<Options> {
     let defaults = Options::default();
     let ts = match thousands_separator {
@@ -67,8 +77,9 @@ impl PyOptions {
         thousands_separator: Option<String>,
         spaces_in_braces: Option<bool>,
         fixed_cjk_width: Option<bool>,
-        sort: Option<bool>,
+        sort: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
+        let sort = sort.map(parse_sort).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
@@ -88,6 +99,11 @@ impl PyOptions {
             ThousandsSeparator::Remove => "remove",
             ThousandsSeparator::Keep => "keep",
         };
+        let sort = match o.sort {
+            SortOrder::Off => "'off'",
+            SortOrder::Asc => "'asc'",
+            SortOrder::Desc => "'desc'",
+        };
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, \
              thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={})",
@@ -97,7 +113,7 @@ impl PyOptions {
             ts,
             if o.spaces_in_braces { "True" } else { "False" },
             if o.fixed_cjk_width { "True" } else { "False" },
-            if o.sort { "True" } else { "False" },
+            sort,
         )
     }
 }
@@ -113,7 +129,7 @@ fn resolve_options(
     thousands_separator: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
-    sort: Option<bool>,
+    sort: Option<SortOrder>,
 ) -> PyResult<Options> {
     let base = match options {
         Some(o) => o.inner.clone(),
@@ -159,8 +175,9 @@ fn format(
     thousands_separator: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
-    sort: Option<bool>,
+    sort: Option<&Bound<'_, PyAny>>,
 ) -> PyResult<String> {
+    let sort = sort.map(parse_sort).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -197,8 +214,9 @@ fn format_file(
     thousands_separator: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
-    sort: Option<bool>,
+    sort: Option<&Bound<'_, PyAny>>,
 ) -> PyResult<String> {
+    let sort = sort.map(parse_sort).transpose()?;
     let opts = resolve_options(
         options,
         indent,
@@ -238,9 +256,11 @@ fn format_recursive(
     thousands_separator: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
-    sort: Option<bool>,
+    sort: Option<&Bound<'_, PyAny>>,
 ) -> PyResult<Vec<(String, String)>> {
     use std::path::Path;
+
+    let sort = sort.map(parse_sort).transpose()?;
 
     let p = Path::new(path);
     if !p.exists() {

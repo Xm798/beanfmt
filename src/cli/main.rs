@@ -1,4 +1,5 @@
 use beanfmt::config::FileConfig;
+use beanfmt::options::SortOrder;
 use beanfmt::recursive::format_recursive;
 use clap::{ArgAction, Parser};
 use std::fs;
@@ -45,12 +46,12 @@ struct Cli {
     #[arg(long = "no-fixed-cjk-width", action = ArgAction::SetTrue, overrides_with = "fixed_cjk_width", hide = true)]
     no_fixed_cjk_width: bool,
 
-    /// Sort entries by date
-    #[arg(long, action = ArgAction::SetTrue, overrides_with = "no_sort")]
-    sort: bool,
+    /// Sort entries by date (asc, desc, off)
+    #[arg(long, value_enum, num_args = 0..=1, default_missing_value = "asc")]
+    sort: Option<SortOrder>,
 
-    /// Disable sorting entries by date
-    #[arg(long = "no-sort", action = ArgAction::SetTrue, overrides_with = "sort", hide = true)]
+    /// Disable sorting entries by date (backwards compat alias for --sort off)
+    #[arg(long = "no-sort", action = ArgAction::SetTrue, hide = true)]
     no_sort: bool,
 
     /// Recursively format included files
@@ -84,12 +85,10 @@ impl Cli {
             None
         };
 
-        let sort = if self.sort {
-            Some(true)
-        } else if self.no_sort {
-            Some(false)
+        let sort = if self.no_sort {
+            Some(SortOrder::Off)
         } else {
-            None
+            self.sort
         };
 
         FileConfig {

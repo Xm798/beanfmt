@@ -12,7 +12,7 @@ fn already_sorted_unchanged() {
 2024-01-03 * \"Third\"
   Assets:Bank  300 USD
 ";
-    assert_eq!(sort_input(input), input);
+    assert_eq!(sort_input(input, false), input);
 }
 
 #[test]
@@ -37,7 +37,7 @@ fn out_of_order_sorted_by_date() {
 2024-01-03 * \"Third\"
   Assets:Bank  300 USD
 ";
-    assert_eq!(sort_input(input), expected);
+    assert_eq!(sort_input(input, false), expected);
 }
 
 #[test]
@@ -76,7 +76,7 @@ pushtag #trip
 
 poptag #trip
 ";
-    assert_eq!(sort_input(input), expected);
+    assert_eq!(sort_input(input, false), expected);
 }
 
 #[test]
@@ -99,7 +99,7 @@ fn time_metadata_sorting() {
   time: \"15:30\"
   Assets:Bank  200 USD
 ";
-    assert_eq!(sort_input(input), expected);
+    assert_eq!(sort_input(input, false), expected);
 }
 
 #[test]
@@ -128,7 +128,7 @@ fn prudent_sort_minimal_moves() {
 
 2024-01-05 * \"Five\"
 ";
-    assert_eq!(sort_input(input), expected);
+    assert_eq!(sort_input(input, false), expected);
 }
 
 #[test]
@@ -142,16 +142,8 @@ fn entries_without_date_stay_in_place() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    // The comment has no date so it forms its own block (separated by blank lines
-    // from the transactions). Only within each block are entries sorted.
-    // Here block1=[Second], blank, block2=[comment], blank, block3=[First]
-    // Each block has only 1 entry, so no reordering happens.
-    // But actually the blank lines separate them into single-entry blocks.
-    // Let me verify the actual behavior: the comment is in its own block.
-    let result = sort_input(input);
-    // The undated comment should remain between the two transactions
+    let result = sort_input(input, false);
     assert!(result.contains("; A comment with no date"));
-    // Each block has only one entry, so relative order is preserved
     assert_eq!(result, input);
 }
 
@@ -168,7 +160,7 @@ fn same_date_preserves_relative_order() {
   Assets:Bank  300 USD
 ";
     // All same date, no time — should preserve original order
-    assert_eq!(sort_input(input), input);
+    assert_eq!(sort_input(input, false), input);
 }
 
 // parse_time tests
@@ -246,7 +238,7 @@ fn parse_time_iso_datetime() {
 
 #[test]
 fn empty_input() {
-    assert_eq!(sort_input(""), "");
+    assert_eq!(sort_input("", false), "");
 }
 
 #[test]
@@ -255,7 +247,7 @@ fn single_entry() {
 2024-01-01 * \"Only\"
   Assets:Bank  100 USD
 ";
-    assert_eq!(sort_input(input), input);
+    assert_eq!(sort_input(input, false), input);
 }
 
 #[test]
@@ -274,7 +266,7 @@ fn two_entries_reversed() {
 2024-01-02 * \"B\"
   Assets:Bank  200 USD
 ";
-    assert_eq!(sort_input(input), expected);
+    assert_eq!(sort_input(input, false), expected);
 }
 
 #[test]
@@ -290,7 +282,7 @@ fn fully_reversed_five() {
 
 2024-01-01 * \"A\"
 ";
-    let result = sort_input(input);
+    let result = sort_input(input, false);
     let dates: Vec<&str> = result
         .lines()
         .filter(|l| l.starts_with("2024"))
@@ -319,7 +311,7 @@ fn unix_timestamp_time_sorting() {
   time: \"1704067200\"
   Assets:Bank  100 USD
 ";
-    let result = sort_input(input);
+    let result = sort_input(input, false);
     assert!(
         result.find("Earlier").unwrap() < result.find("Later").unwrap(),
         "Earlier timestamp should come first"
@@ -339,6 +331,97 @@ fn undated_comment_between_transactions_preserved() {
 2024-01-01 * \"First\"
   Assets:Bank  100 USD
 ";
-    let result = sort_input(input);
+    let result = sort_input(input, false);
     assert!(result.contains("; Section divider"));
+}
+
+// Descending sort tests
+
+#[test]
+fn descending_sort_reverses_order() {
+    let input = "\
+2024-01-01 * \"First\"
+  Assets:Bank  100 USD
+
+2024-01-02 * \"Second\"
+  Assets:Bank  200 USD
+
+2024-01-03 * \"Third\"
+  Assets:Bank  300 USD
+";
+    let expected = "\
+2024-01-03 * \"Third\"
+  Assets:Bank  300 USD
+
+2024-01-02 * \"Second\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"First\"
+  Assets:Bank  100 USD
+";
+    assert_eq!(sort_input(input, true), expected);
+}
+
+#[test]
+fn descending_sort_out_of_order() {
+    let input = "\
+2024-01-02 * \"Second\"
+  Assets:Bank  200 USD
+
+2024-01-03 * \"Third\"
+  Assets:Bank  300 USD
+
+2024-01-01 * \"First\"
+  Assets:Bank  100 USD
+";
+    let expected = "\
+2024-01-03 * \"Third\"
+  Assets:Bank  300 USD
+
+2024-01-02 * \"Second\"
+  Assets:Bank  200 USD
+
+2024-01-01 * \"First\"
+  Assets:Bank  100 USD
+";
+    assert_eq!(sort_input(input, true), expected);
+}
+
+#[test]
+fn descending_barriers_respected() {
+    let input = "\
+2024-01-01 * \"Early\"
+  Assets:Bank  100 USD
+
+2024-01-03 * \"Late\"
+  Assets:Bank  300 USD
+
+pushtag #trip
+
+2024-01-04 * \"After barrier early\"
+  Assets:Bank  400 USD
+
+2024-01-05 * \"After barrier late\"
+  Assets:Bank  500 USD
+
+poptag #trip
+";
+    let expected = "\
+2024-01-03 * \"Late\"
+  Assets:Bank  300 USD
+
+2024-01-01 * \"Early\"
+  Assets:Bank  100 USD
+
+pushtag #trip
+
+2024-01-05 * \"After barrier late\"
+  Assets:Bank  500 USD
+
+2024-01-04 * \"After barrier early\"
+  Assets:Bank  400 USD
+
+poptag #trip
+";
+    assert_eq!(sort_input(input, true), expected);
 }
