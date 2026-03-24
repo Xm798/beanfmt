@@ -83,7 +83,7 @@ static TRANSACTION_RE: LazyLock<Regex> =
 static POSTING_RE: LazyLock<Regex> = LazyLock::new(|| {
     let cost = r"(\{\{.*?\}\}|\{.*?\})";
     let pattern = format!(
-        r"^(\s+)({ACCOUNT})(?:\s+({NUMBER})\s+({CURRENCY}))?(?:\s+{cost})?(?:\s+(@@?\s+{NUMBER}\s+{CURRENCY}))?(?:\s+(;.*))?\s*$"
+        r"^(\s+)({ACCOUNT})(?:\s+({NUMBER})\s*({CURRENCY}))?(?:\s+{cost})?(?:\s+(@@?\s+{NUMBER}\s+{CURRENCY}))?(?:\s+(;.*))?\s*$"
     );
     Regex::new(&pattern).unwrap()
 });

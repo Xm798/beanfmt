@@ -62,6 +62,63 @@ fn posting_with_amount() {
 }
 
 #[test]
+fn posting_no_space_between_number_and_currency() {
+    let line = "    Assets:Bank:Test:9999                                        0.04CNY";
+    match parse_line(line) {
+        Line::Posting {
+            indent,
+            account,
+            number,
+            currency,
+            cost,
+            price,
+            comment,
+        } => {
+            assert_eq!(indent, "    ");
+            assert_eq!(account, "Assets:Bank:Test:9999");
+            assert_eq!(number, Some("0.04"));
+            assert_eq!(currency, Some("CNY"));
+            assert_eq!(cost, None);
+            assert_eq!(price, None);
+            assert_eq!(comment, None);
+        }
+        other => panic!("Expected Posting, got {:?}", other),
+    }
+}
+
+#[test]
+fn posting_trailing_whitespace() {
+    let line = "  Expenses:Food  50.00 USD   ";
+    match parse_line(line) {
+        Line::Posting {
+            account,
+            number,
+            currency,
+            ..
+        } => {
+            assert_eq!(account, "Expenses:Food");
+            assert_eq!(number, Some("50.00"));
+            assert_eq!(currency, Some("USD"));
+        }
+        other => panic!("Expected Posting, got {:?}", other),
+    }
+}
+
+#[test]
+fn posting_account_only_trailing_whitespace() {
+    let line = "  Assets:Bank:Checking  ";
+    match parse_line(line) {
+        Line::Posting {
+            account, number, ..
+        } => {
+            assert_eq!(account, "Assets:Bank:Checking");
+            assert_eq!(number, None);
+        }
+        other => panic!("Expected Posting, got {:?}", other),
+    }
+}
+
+#[test]
 fn posting_account_only() {
     let line = "  Assets:Bank:Checking";
     match parse_line(line) {

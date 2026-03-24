@@ -63,6 +63,21 @@ fn posting_currency_alignment() {
 }
 
 #[test]
+fn posting_no_space_between_number_and_currency() {
+    let opts = default_opts();
+    let input = "2025-12-21 * \"Test\" \"Interest\"\n    Income:Investment:Interest\n    Assets:Bank:Test:9999                                        0.04CNY\n";
+    let result = format(input, &opts);
+    assert!(
+        result.contains("Assets:Bank:Test:9999"),
+        "account should not be mangled: {result}"
+    );
+    assert!(
+        result.contains("0.04 CNY"),
+        "number and currency should be separated by space: {result}"
+    );
+}
+
+#[test]
 fn balance_alignment() {
     let opts = default_opts();
     let input = "2024-01-31 balance Assets:Bank:Checking 1000.00 USD\n";
