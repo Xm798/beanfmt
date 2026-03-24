@@ -39,18 +39,23 @@ Wait for user confirmation. The user may override the version.
 
 ## Step 2: Update version numbers
 
-Two files contain the version and must be updated together:
+Three files contain or reflect the version and must be updated together:
 
 1. `Cargo.toml` — line starting with `version = "…"` in the `[package]` section
 2. `editors/code/package.json` — the `"version"` field
+3. `Cargo.lock` — automatically updated when `Cargo.toml` changes
 
-Use the Edit tool to update both files to the new version.
+Use the Edit tool to update `Cargo.toml` and `editors/code/package.json`. Then run `cargo generate-lockfile` to update `Cargo.lock`.
 
 ## Step 3: Commit
 
 Create a commit with message: `chore: bump version to <new_version>`
 
-Stage only the two changed files by name — do not use `git add -A`.
+Stage the three changed files by name — do not use `git add -A`:
+
+```bash
+git add Cargo.toml Cargo.lock editors/code/package.json
+```
 
 ## Step 4: Create tag
 
