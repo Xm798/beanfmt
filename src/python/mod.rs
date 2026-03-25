@@ -153,11 +153,43 @@ impl PyOptions {
     }
 }
 
+/// Interpret the `config` parameter:
+/// - None -> FileConfig::default() (no config loading)
+/// - True -> auto-discover from file's parent directory
+/// - False -> FileConfig::default() (no config loading)
+/// - str  -> load specific config file path
+fn resolve_config_param(
+    config: Option<&Bound<'_, PyAny>>,
+    file_path: &str,
+) -> PyResult<crate::config::FileConfig> {
+    let Some(val) = config else {
+        return Ok(crate::config::FileConfig::default());
+    };
+
+    // Check PyBool before string extraction (bool is a subclass of str in Python)
+    if val.is_instance_of::<PyBool>() {
+        let enabled: bool = val.extract()?;
+        if !enabled {
+            return Ok(crate::config::FileConfig::default());
+        }
+        let p = std::path::Path::new(file_path);
+        let dir = p.parent().unwrap_or(p);
+        crate::config::find_project_config_strict(dir).map_err(PyValueError::new_err)
+    } else {
+        let config_path: String = val.extract()?;
+        let content = std::fs::read_to_string(&config_path)
+            .map_err(|e| PyOSError::new_err(format!("{config_path}: {e}")))?;
+        crate::config::FileConfig::parse(&content)
+            .map_err(|e| PyValueError::new_err(format!("{config_path}: {e}")))
+    }
+}
+
 /// Resolve an `Options` value from an optional `PyOptions` object plus kwargs.
 /// If both `options` and individual kwargs are provided, kwargs override.
 #[allow(clippy::too_many_arguments)]
 fn resolve_options(
     options: Option<&PyOptions>,
+    base_config: crate::config::FileConfig,
     indent: Option<usize>,
     currency_column: Option<usize>,
     cost_column: Option<usize>,
@@ -170,7 +202,7 @@ fn resolve_options(
 ) -> PyResult<Options> {
     let base = match options {
         Some(o) => o.inner.clone(),
-        None => Options::default(),
+        None => base_config.into_options(),
     };
 
     let ts = match thousands_separator {
@@ -188,6 +220,33 @@ fn resolve_options(
         sort: sort.unwrap_or(base.sort),
         sort_timeless: sort_timeless.unwrap_or(base.sort_timeless),
         sort_exclude: sort_exclude.unwrap_or(base.sort_exclude),
+    })
+}
+
+/// Parse a TOML config string and return an Options object.
+/// Raises ValueError on invalid TOML.
+#[pyfunction]
+fn parse_config(content: &str) -> PyResult<PyOptions> {
+    let config = crate::config::FileConfig::parse(content)
+        .map_err(|e| PyValueError::new_err(format!("invalid config: {e}")))?;
+    Ok(PyOptions {
+        inner: config.into_options(),
+    })
+}
+
+/// Load project config by searching upward from the given directory.
+/// Returns an Options object with defaults filled in.
+/// Raises ValueError if config file exists but contains invalid TOML.
+/// Raises OSError if the directory doesn't exist.
+#[pyfunction]
+fn load_project_config(dir: &str) -> PyResult<PyOptions> {
+    let path = std::path::Path::new(dir);
+    if !path.is_dir() {
+        return Err(PyOSError::new_err(format!("{dir}: not a directory")));
+    }
+    let config = crate::config::find_project_config_strict(path).map_err(PyValueError::new_err)?;
+    Ok(PyOptions {
+        inner: config.into_options(),
     })
 }
 
@@ -225,6 +284,7 @@ fn format(
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
     let opts = resolve_options(
         options,
+        crate::config::FileConfig::default(),
         indent,
         currency_column,
         cost_column,
@@ -242,6 +302,7 @@ fn format(
 #[pyfunction]
 #[pyo3(signature = (
     path,
+    config = None,
     options = None,
     indent = None,
     currency_column = None,
@@ -256,6 +317,7 @@ fn format(
 #[allow(clippy::too_many_arguments)]
 fn format_file(
     path: &str,
+    config: Option<&Bound<'_, PyAny>>,
     options: Option<&PyOptions>,
     indent: Option<usize>,
     currency_column: Option<usize>,
@@ -270,8 +332,10 @@ fn format_file(
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+    let base_config = resolve_config_param(config, path)?;
     let opts = resolve_options(
         options,
+        base_config,
         indent,
         currency_column,
         cost_column,
@@ -292,6 +356,7 @@ fn format_file(
 #[pyfunction]
 #[pyo3(signature = (
     path,
+    config = None,
     options = None,
     indent = None,
     currency_column = None,
@@ -306,6 +371,7 @@ fn format_file(
 #[allow(clippy::too_many_arguments)]
 fn format_recursive(
     path: &str,
+    config: Option<&Bound<'_, PyAny>>,
     options: Option<&PyOptions>,
     indent: Option<usize>,
     currency_column: Option<usize>,
@@ -330,8 +396,10 @@ fn format_recursive(
         )));
     }
 
+    let base_config = resolve_config_param(config, path)?;
     let opts = resolve_options(
         options,
+        base_config,
         indent,
         currency_column,
         cost_column,
@@ -358,5 +426,7 @@ fn beanfmt(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(format, m)?)?;
     m.add_function(wrap_pyfunction!(format_file, m)?)?;
     m.add_function(wrap_pyfunction!(format_recursive, m)?)?;
+    m.add_function(wrap_pyfunction!(parse_config, m)?)?;
+    m.add_function(wrap_pyfunction!(load_project_config, m)?)?;
     Ok(())
 }
