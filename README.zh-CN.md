@@ -99,10 +99,20 @@ cost_column = 65
 thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
-sort = "asc"    # "asc"、"desc"、"off"
+sort = "asc"    # "asc"、"desc"、"off" 或 true/false
+sort_timeless = "keep"   # "begin"、"end" 或 "keep"
+sort_exclude = ["open", "close"]  # 排除的指令类型作为排序屏障
 ```
 
 所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
+
+各入口对配置文件的支持：
+
+| 入口 | 全局配置 | 项目配置 | 说明 |
+|------|---------|---------|------|
+| CLI | 自动加载 | 自动加载 | `--no-config` 可禁用 |
+| Python | 不支持 | 通过 `config=True` 启用 | 也可用 `load_project_config()` 手动加载 |
+| VSCode | 不支持（用户设置替代） | 自动加载（工作区内） | 显式设置覆盖配置文件 |
 
 ### Python
 
@@ -115,13 +125,28 @@ output = beanfmt.format(source, currency_column=60, sort=True)
 # 格式化文件
 output = beanfmt.format_file("ledger.beancount")
 
+# 使用项目配置（自动发现 .beanfmt.toml）
+output = beanfmt.format_file("ledger.beancount", config=True)
+
+# 指定配置文件路径
+output = beanfmt.format_file("ledger.beancount", config="/path/to/.beanfmt.toml")
+
+# 配置文件 + kwargs 覆盖（kwargs 优先级更高）
+output = beanfmt.format_file("ledger.beancount", config=True, indent=8)
+
+# 加载和检查项目配置
+opts = beanfmt.load_project_config("/path/to/project/")
+opts = beanfmt.parse_config('indent = 2\ncurrency_column = 80\n')
+
 # 可复用的选项对象
 opts = beanfmt.Options(currency_column=60, thousands_separator="add")
 output = beanfmt.format(source, options=opts)
 
 # 递归格式化 - 返回 (路径, 内容) 元组列表
-results = beanfmt.format_recursive("ledger.beancount")
+results = beanfmt.format_recursive("ledger.beancount", config=True)
 ```
+
+`format_file` 和 `format_recursive` 的 `config` 参数接受 `None`（默认，不加载配置）、`True`（从文件目录向上查找 `.beanfmt.toml`）、`False`（同 `None`）或配置文件路径字符串。kwargs 始终覆盖配置文件中的值。`config` 和 `options` 参数互斥。
 
 ### WASM
 
@@ -146,6 +171,8 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 }
 ```
 
+扩展会自动读取工作区中的 `.beanfmt.toml` 或 `beanfmt.toml`（从文件所在目录向上搜索至工作区根目录）。显式设置的 VSCode 配置项会覆盖配置文件中的值；未设置的项回退到配置文件，再回退到内置默认值。
+
 可用设置：
 
 | 设置项 | 默认值 | 说明 |
@@ -156,7 +183,9 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |
 | `beanfmt.spacesInBraces` | `false` | 花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | CJK 双宽度字符对齐 |
-| `beanfmt.sort` | `false` | 按日期排序 |
+| `beanfmt.sort` | `"off"` | 按日期排序：`"asc"`、`"desc"`、`"off"` |
+| `beanfmt.sortTimeless` | `"keep"` | 无时间条目在日内的位置：`"begin"`、`"end"`、`"keep"` |
+| `beanfmt.sortExclude` | `[]` | 排除的指令类型（作为排序屏障） |
 
 ## 许可证
 

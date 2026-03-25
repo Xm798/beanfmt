@@ -110,6 +110,14 @@ sort_exclude = ["open", "close"]  # excluded types act as sort barriers
 
 All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
 
+Config file support varies by target:
+
+| Target | Global config | Project config | Notes |
+|--------|--------------|----------------|-------|
+| CLI | Auto | Auto | `--no-config` to disable |
+| Python | No | Opt-in via `config=True` | `load_project_config()` for manual loading |
+| VSCode | No (user settings serve this role) | Auto (within workspace) | Explicit settings override config file |
+
 ### Python
 
 ```python
@@ -121,13 +129,28 @@ output = beanfmt.format(source, currency_column=60, sort=True)
 # Format a file
 output = beanfmt.format_file("ledger.beancount")
 
+# Format with project config (.beanfmt.toml auto-discovery)
+output = beanfmt.format_file("ledger.beancount", config=True)
+
+# Format with a specific config file
+output = beanfmt.format_file("ledger.beancount", config="/path/to/.beanfmt.toml")
+
+# Config + kwargs override (kwargs win over config file values)
+output = beanfmt.format_file("ledger.beancount", config=True, indent=8)
+
+# Load and inspect project config
+opts = beanfmt.load_project_config("/path/to/project/")
+opts = beanfmt.parse_config('indent = 2\ncurrency_column = 80\n')
+
 # Reusable options
 opts = beanfmt.Options(currency_column=60, thousands_separator="add")
 output = beanfmt.format(source, options=opts)
 
 # Recursive formatting — returns list of (path, content) tuples
-results = beanfmt.format_recursive("ledger.beancount")
+results = beanfmt.format_recursive("ledger.beancount", config=True)
 ```
+
+The `config` parameter on `format_file` and `format_recursive` accepts `None` (default, no config loading), `True` (auto-discover `.beanfmt.toml` from the file's directory upward), `False` (same as `None`), or a string path to a specific config file. Individual kwargs always override config file values. The `config` and `options` parameters are mutually exclusive.
 
 ### WASM
 
@@ -152,6 +175,8 @@ Install the extension, then configure in `settings.json`:
 }
 ```
 
+The extension automatically reads `.beanfmt.toml` or `beanfmt.toml` from the workspace (searching from the file's directory up to the workspace root). Explicit VSCode settings override config file values; unset settings fall back to the config file, then to built-in defaults.
+
 Available settings:
 
 | Setting | Default | Description |
@@ -163,7 +188,7 @@ Available settings:
 | `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |
 | `beanfmt.sort` | `"off"` | Sort entries by date: `"asc"`, `"desc"`, `"off"` |
-| `beanfmt.sortTimeless` | `"begin"` | Timeless entry position within a day: `"begin"`, `"end"` |
+| `beanfmt.sortTimeless` | `"keep"` | Timeless entry position within a day: `"begin"`, `"end"`, `"keep"` |
 | `beanfmt.sortExclude` | `[]` | Directive types to exclude from sorting (act as sort barriers) |
 
 ## License
