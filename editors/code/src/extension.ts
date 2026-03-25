@@ -10,7 +10,9 @@ async function loadWasm(
 ): Promise<typeof BeanfmtWasm> {
   if (wasmModule) return wasmModule;
   const wasmPath = path.join(context.extensionPath, "wasm");
-  wasmModule = await import(wasmPath);
+  // Use require() instead of import() because esbuild preserves native
+  // import() which wraps CJS exports under .default in Node.js
+  wasmModule = require(wasmPath) as typeof BeanfmtWasm;
   return wasmModule!;
 }
 
@@ -70,8 +72,8 @@ async function findProjectConfig(
         const content = await vscode.workspace.fs.readFile(configUri);
         const raw = TOML.parse(new TextDecoder().decode(content));
         return validateConfig(raw as Record<string, unknown>);
-      } catch (err) {
-        if (err instanceof TOML.TomlError) {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "TomlError") {
           vscode.window.showWarningMessage(
             `[beanfmt] Failed to parse ${name}: ${err.message}`,
           );
