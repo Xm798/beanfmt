@@ -71,6 +71,10 @@ impl FileConfig {
         }
     }
 
+    pub fn parse(content: &str) -> Result<FileConfig, toml::de::Error> {
+        toml::from_str(content)
+    }
+
     pub fn into_options(self) -> Options {
         let defaults = Options::default();
         let thousands_separator = self
@@ -124,6 +128,29 @@ pub fn find_project_config(start_dir: &Path) -> FileConfig {
             None => return FileConfig::default(),
         }
     }
+}
+
+pub fn find_project_config_strict(start_dir: &Path) -> Result<FileConfig, String> {
+    let mut dir = start_dir;
+    loop {
+        let dotfile = dir.join(".beanfmt.toml");
+        if dotfile.is_file() {
+            return load_file_strict(&dotfile);
+        }
+        let plain = dir.join("beanfmt.toml");
+        if plain.is_file() {
+            return load_file_strict(&plain);
+        }
+        match dir.parent() {
+            Some(parent) => dir = parent,
+            None => return Ok(FileConfig::default()),
+        }
+    }
+}
+
+fn load_file_strict(path: &Path) -> Result<FileConfig, String> {
+    let content = fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    FileConfig::parse(&content).map_err(|e| format!("{}: {e}", path.display()))
 }
 
 fn load_file(path: &Path) -> FileConfig {
@@ -356,6 +383,48 @@ thousands = "add"
     fn load_sort_exclude_empty_array() {
         let config: FileConfig = toml::from_str(r#"sort_exclude = []"#).unwrap();
         assert_eq!(config.sort_exclude, Some(vec![]));
+    }
+
+    #[test]
+    fn parse_valid() {
+        let config = FileConfig::parse("indent = 2\ncurrency_column = 80\n").unwrap();
+        assert_eq!(config.indent, Some(2));
+        assert_eq!(config.currency_column, Some(80));
+    }
+
+    #[test]
+    fn parse_invalid_toml() {
+        let result = FileConfig::parse("indent = ???");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parse_empty() {
+        let config = FileConfig::parse("").unwrap();
+        assert_eq!(config.indent, None);
+    }
+
+    #[test]
+    fn find_project_config_strict_valid() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(".beanfmt.toml"), "indent = 2\n").unwrap();
+        let config = find_project_config_strict(dir.path()).unwrap();
+        assert_eq!(config.indent, Some(2));
+    }
+
+    #[test]
+    fn find_project_config_strict_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join(".beanfmt.toml"), "indent = ???\n").unwrap();
+        let result = find_project_config_strict(dir.path());
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn find_project_config_strict_no_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let config = find_project_config_strict(dir.path()).unwrap();
+        assert_eq!(config.indent, None);
     }
 
     #[test]
