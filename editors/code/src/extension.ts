@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import * as TOML from "@iarna/toml";
 import type * as BeanfmtWasm from "*/wasm";
 
 let wasmModule: typeof BeanfmtWasm | undefined;
@@ -15,6 +16,52 @@ async function loadWasm(
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
+}
+
+interface BeanfmtConfig {
+  indent?: number;
+  currency_column?: number;
+  cost_column?: number;
+  thousands?: string;
+  spaces_in_braces?: boolean;
+  fixed_cjk_width?: boolean;
+  sort?: string | boolean;
+  sort_timeless?: string;
+  sort_exclude?: string[];
+}
+
+async function findProjectConfig(
+  documentUri: vscode.Uri,
+): Promise<BeanfmtConfig> {
+  const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
+  if (!workspaceFolder) return {};
+
+  const fileDirParts = path.dirname(documentUri.fsPath).split(path.sep);
+  const rootParts = workspaceFolder.uri.fsPath.split(path.sep);
+
+  // Walk from file's directory up to workspace root (closest config wins)
+  for (let i = fileDirParts.length; i >= rootParts.length; i--) {
+    const dir = fileDirParts.slice(0, i).join(path.sep);
+    for (const name of [".beanfmt.toml", "beanfmt.toml"]) {
+      const configUri = vscode.Uri.file(path.join(dir, name));
+      try {
+        const content = await vscode.workspace.fs.readFile(configUri);
+        const parsed = TOML.parse(
+          new TextDecoder().decode(content),
+        ) as unknown as BeanfmtConfig;
+        return parsed;
+      } catch (err) {
+        if (err instanceof TOML.TomlError) {
+          vscode.window.showWarningMessage(
+            `[beanfmt] Failed to parse ${name}: ${err.message}`,
+          );
+          return {};
+        }
+        // File not found — continue searching up
+      }
+    }
+  }
+  return {};
 }
 
 export async function activate(
@@ -33,28 +80,78 @@ export async function activate(
       async provideDocumentFormattingEdits(
         document: vscode.TextDocument,
       ): Promise<vscode.TextEdit[]> {
+        const projectConfig = await findProjectConfig(document.uri);
         const config = vscode.workspace.getConfiguration("beanfmt");
-        const indent = clamp(config.get<number>("indent", 4), 1, 20);
+
+        // Helper: use explicit user setting if set, else project config, else default.
+        // Uses config.inspect() to distinguish explicitly-set values from defaults.
+        function resolve<T>(
+          key: string,
+          projectVal: T | undefined,
+          fallback: T,
+        ): T {
+          const inspected = config.inspect<T>(key);
+          // Explicit user setting at any level overrides project config
+          const explicit =
+            inspected?.workspaceFolderValue ??
+            inspected?.workspaceValue ??
+            inspected?.globalValue;
+          if (explicit !== undefined) return explicit;
+          if (projectVal !== undefined) return projectVal;
+          return fallback;
+        }
+
+        // Normalize sort from config file (may be boolean)
+        const projectSort =
+          projectConfig.sort === true
+            ? "asc"
+            : projectConfig.sort === false
+              ? "off"
+              : (projectConfig.sort as string | undefined);
+
+        const indent = clamp(
+          resolve("indent", projectConfig.indent, 4),
+          1,
+          20,
+        );
         const currencyColumn = clamp(
-          config.get<number>("currencyColumn", 70),
+          resolve("currencyColumn", projectConfig.currency_column, 70),
           1,
           200,
         );
         const costColumn = clamp(
-          config.get<number>("costColumn", 75),
+          resolve("costColumn", projectConfig.cost_column, 75),
           1,
           200,
         );
-        const thousandsSeparator = config.get<string>(
+        const thousandsSeparator = resolve(
           "thousandsSeparator",
+          projectConfig.thousands,
           "keep",
         );
-        const spacesInBraces = config.get<boolean>("spacesInBraces", false);
-        const fixedCJKWidth = config.get<boolean>("fixedCJKWidth", true);
-        const sort = config.get<string>("sort", "off");
-        const sortTimeless = config.get<string>("sortTimeless", "begin");
-        const sortExcludeRaw = config.get<string[]>("sortExclude", []);
-        const sortExclude = sortExcludeRaw.length > 0 ? sortExcludeRaw : undefined;
+        const spacesInBraces = resolve(
+          "spacesInBraces",
+          projectConfig.spaces_in_braces,
+          false,
+        );
+        const fixedCJKWidth = resolve(
+          "fixedCJKWidth",
+          projectConfig.fixed_cjk_width,
+          true,
+        );
+        const sort = resolve("sort", projectSort, "off");
+        const sortTimeless = resolve(
+          "sortTimeless",
+          projectConfig.sort_timeless,
+          "keep",
+        );
+        const sortExcludeRaw = resolve(
+          "sortExclude",
+          projectConfig.sort_exclude,
+          [] as string[],
+        );
+        const sortExclude =
+          sortExcludeRaw.length > 0 ? sortExcludeRaw : undefined;
 
         const input = document.getText().replace(/\r\n?/g, "\n");
 
