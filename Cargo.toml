@@ -27,9 +27,10 @@ required-features = ["cli"]
 
 [features]
 default = ["cli"]
-cli = ["dep:clap", "dep:glob", "dep:serde", "dep:toml"]
+file-config = ["dep:serde", "dep:toml"]
+cli = ["file-config", "dep:clap", "dep:glob"]
 wasm = ["dep:wasm-bindgen"]
-python = ["dep:pyo3", "dep:glob"]
+python = ["file-config", "dep:pyo3", "dep:glob"]
 
 [dependencies]
 regex = { version = "1", default-features = false, features = ["std", "unicode-perl", "unicode-gencat"] }

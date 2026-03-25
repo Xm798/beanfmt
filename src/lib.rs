@@ -2,7 +2,7 @@
 compile_error!("features \"python\" and \"wasm\" are mutually exclusive");
 
 pub mod align;
-#[cfg(feature = "cli")]
+#[cfg(feature = "file-config")]
 pub mod config;
 pub mod line;
 pub mod normalize;
