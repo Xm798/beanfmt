@@ -43,38 +43,11 @@ jobs:
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
-  publish-vscode:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v2
-      - uses: oven-sh/setup-bun@v2
-      - run: cargo install wasm-pack
-      - run: wasm-pack build --target nodejs --out-dir editors/code/wasm --features wasm --no-default-features
-      - run: cd editors/code && bun install && bun run compile
-      - run: cd editors/code && bunx @vscode/vsce package --allow-missing-repository
-      - run: cd editors/code && bunx @vscode/vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-      - uses: actions/upload-artifact@v5
-        with:
-          name: vsix
-          path: editors/code/*.vsix
-
   github-release:
-    needs: [publish-crate, publish-pypi, publish-vscode]
+    needs: [publish-crate, publish-pypi]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/download-artifact@v5
-        with:
-          name: vsix
-          path: artifacts
       - uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
-          files: artifacts/*.vsix

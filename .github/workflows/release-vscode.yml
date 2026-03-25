@@ -1,0 +1,37 @@
+name: Release VSCode Extension
+
+on:
+  push:
+    tags: ["vscode-v*"]
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish-vscode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: oven-sh/setup-bun@v2
+      - run: cargo install wasm-pack
+      - run: wasm-pack build --target nodejs --out-dir editors/code/wasm --features wasm --no-default-features
+      - run: cd editors/code && bun install && bun run compile
+      - run: cd editors/code && bunx @vscode/vsce package --allow-missing-repository
+      - run: cd editors/code && bunx @vscode/vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - uses: actions/upload-artifact@v5
+        with:
+          name: vsix
+          path: editors/code/*.vsix
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: editors/code/*.vsix
