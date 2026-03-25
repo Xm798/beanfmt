@@ -30,6 +30,28 @@ interface BeanfmtConfig {
   sort_exclude?: string[];
 }
 
+function validateConfig(raw: Record<string, unknown>): BeanfmtConfig {
+  const config: BeanfmtConfig = {};
+  if (typeof raw.indent === "number") config.indent = raw.indent;
+  if (typeof raw.currency_column === "number")
+    config.currency_column = raw.currency_column;
+  if (typeof raw.cost_column === "number") config.cost_column = raw.cost_column;
+  if (typeof raw.thousands === "string") config.thousands = raw.thousands;
+  if (typeof raw.spaces_in_braces === "boolean")
+    config.spaces_in_braces = raw.spaces_in_braces;
+  if (typeof raw.fixed_cjk_width === "boolean")
+    config.fixed_cjk_width = raw.fixed_cjk_width;
+  if (typeof raw.sort === "string" || typeof raw.sort === "boolean")
+    config.sort = raw.sort;
+  if (typeof raw.sort_timeless === "string")
+    config.sort_timeless = raw.sort_timeless;
+  if (Array.isArray(raw.sort_exclude))
+    config.sort_exclude = raw.sort_exclude.filter(
+      (s): s is string => typeof s === "string",
+    );
+  return config;
+}
+
 async function findProjectConfig(
   documentUri: vscode.Uri,
 ): Promise<BeanfmtConfig> {
@@ -46,10 +68,8 @@ async function findProjectConfig(
       const configUri = vscode.Uri.file(path.join(dir, name));
       try {
         const content = await vscode.workspace.fs.readFile(configUri);
-        const parsed = TOML.parse(
-          new TextDecoder().decode(content),
-        ) as unknown as BeanfmtConfig;
-        return parsed;
+        const raw = TOML.parse(new TextDecoder().decode(content));
+        return validateConfig(raw as Record<string, unknown>);
       } catch (err) {
         if (err instanceof TOML.TomlError) {
           vscode.window.showWarningMessage(

@@ -173,7 +173,14 @@ fn resolve_config_param(
             return Ok(crate::config::FileConfig::default());
         }
         let p = std::path::Path::new(file_path);
-        let dir = p.parent().unwrap_or(p);
+        let abs = if p.is_relative() {
+            std::env::current_dir()
+                .map_err(|e| PyOSError::new_err(format!("cannot determine cwd: {e}")))?
+                .join(p)
+        } else {
+            p.to_path_buf()
+        };
+        let dir = abs.parent().unwrap_or(&abs);
         crate::config::find_project_config_strict(dir).map_err(PyValueError::new_err)
     } else {
         let config_path: String = val.extract()?;
@@ -329,6 +336,11 @@ fn format_file(
     sort_timeless: Option<String>,
     sort_exclude: Option<Vec<String>>,
 ) -> PyResult<String> {
+    if options.is_some() && config.is_some() {
+        return Err(PyValueError::new_err(
+            "cannot specify both 'options' and 'config'; use kwargs to override config values",
+        ));
+    }
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
@@ -385,6 +397,11 @@ fn format_recursive(
 ) -> PyResult<Vec<(String, String)>> {
     use std::path::Path;
 
+    if options.is_some() && config.is_some() {
+        return Err(PyValueError::new_err(
+            "cannot specify both 'options' and 'config'; use kwargs to override config values",
+        ));
+    }
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
