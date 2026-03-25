@@ -2,14 +2,14 @@
 
 [中文文档](README.zh-CN.md)
 
-A fast [beancount](https://beancount.github.io/) file formatter with CJK double-width character support.
+A fast [beancount](https://beancount.github.io/) file formatter with CJK double-width character support and smart date-based sorting.
 
 ## Features
 
 - Column-aligned currencies and costs with CJK-aware display width
 - Thousands separator normalization (add, remove, or keep)
 - Brace spacing control for cost annotations
-- Date-based entry sorting
+- Smart date-based sorting (asc/desc) with `time` metadata intra-day ordering, timeless entry positioning, and directive-type sort barriers
 - Recursive formatting of `include`d files (with glob support)
 - Multi-platform: CLI, Python library, WASM module, and VSCode extension
 

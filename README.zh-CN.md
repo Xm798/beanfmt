@@ -1,13 +1,13 @@
 # Beanfmt
 
-快速的 [beancount](https://beancount.github.io/) 文件格式化工具，支持 CJK 双宽度字符对齐。
+快速的 [beancount](https://beancount.github.io/) 文件格式化工具，支持 CJK 双宽度字符对齐和按日期智能排序。
 
 ## 功能特性
 
 - 货币和成本列对齐，支持 CJK 字符显示宽度计算
 - 千分位分隔符处理（添加、移除或保持不变）
 - 成本花括号内空格控制
-- 按日期排序条目
+- 按日期智能排序（升序/降序），支持 `time` 元数据日内排序、无时间条目位置控制、指令类型排序屏障
 - 递归格式化 `include` 引入的文件（支持 glob 模式）
 - 多平台支持：CLI、Python 库、WASM 模块、VSCode 扩展
 
