@@ -104,16 +104,17 @@
   },
   "scripts": {
     "vscode:prepublish": "bun run build:wasm && bun run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./",
+    "compile": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
+    "watch": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
     "build:wasm": "cd ../.. && wasm-pack build --target nodejs --out-dir editors/code/wasm --features wasm --no-default-features",
     "package": "bunx @vscode/vsce package"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.75.0",
-    "typescript": "^5.0.0",
-    "@vscode/vsce": "^3.0.0"
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.27.4",
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "@iarna/toml": "^2.2.5"
