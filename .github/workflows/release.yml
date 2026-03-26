@@ -89,7 +89,7 @@ jobs:
           name: sdist
           path: dist/
       - uses: astral-sh/setup-uv@v4
-      - run: uv publish --skip-existing dist/*
+      - run: uv publish --check-url https://pypi.org/simple/ dist/*
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
 
