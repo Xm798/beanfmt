@@ -62,13 +62,14 @@ pub fn format(input: &str, options: &Options) -> String {
             } => {
                 let number = number.map(|n| normalize_thousands(n, &options.thousands_separator));
                 let cost = cost.map(|c| normalize_braces(c, options.spaces_in_braces));
+                let price = price.map(|p| p.replace("- ", "-"));
                 align_posting(
                     &options.indent_str(),
                     account,
                     number.as_deref(),
                     currency,
                     cost.as_deref(),
-                    price,
+                    price.as_deref(),
                     comment,
                     options,
                 )

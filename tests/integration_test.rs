@@ -440,3 +440,47 @@ fn format_without_sort_preserves_order() {
         .collect();
     assert_eq!(dates, vec!["2024-01-03", "2024-01-01"]);
 }
+
+#[test]
+fn posting_with_spaced_negative_amount() {
+    let input = "\
+2024-01-01 * \"Shop\" \"Item\"
+    time: \"20:16:47\"
+    Liabilities:Credit:Bank                                     - 619.47 CNY
+        source: \"import\"
+    Expenses:Travel:Shopping                                  619.47 CNY
+";
+    let opts = Options {
+        currency_column: 60,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+
+    // Bug 1: account name must not be broken (no space after colon)
+    assert!(
+        !result.contains("Liabilities: Credit"),
+        "Account name should not have space after colon: {}",
+        result
+    );
+    assert!(
+        result.contains("Liabilities:Credit:Bank"),
+        "Account name should be preserved: {}",
+        result
+    );
+
+    // Bug 2: spaced negative should be normalized to no space
+    assert!(
+        result.contains("-619.47"),
+        "Spaced negative '- 619.47' should be normalized to '-619.47': {}",
+        result
+    );
+
+    // Bug 3: posting sub-metadata should have deeper indent than transaction metadata
+    let lines: Vec<&str> = result.lines().collect();
+    let card_line = lines.iter().find(|l| l.contains("source")).unwrap();
+    assert!(
+        card_line.starts_with("        "),
+        "Posting sub-metadata should have double indent: '{}'",
+        card_line
+    );
+}

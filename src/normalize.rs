@@ -50,6 +50,8 @@ pub fn normalize_comment(line: &str) -> String {
 
 /// Normalize thousands separators on an extracted number string.
 pub fn normalize_thousands(num_str: &str, separator: &ThousandsSeparator) -> String {
+    // Strip any space between sign and digits (e.g., "- 619.47" → "-619.47")
+    let num_str = &num_str.replace(' ', "");
     match separator {
         ThousandsSeparator::Keep => num_str.to_string(),
         ThousandsSeparator::Remove => num_str.replace(',', ""),

@@ -484,6 +484,24 @@ fn posting_negative_number() {
 }
 
 #[test]
+fn posting_negative_number_with_space() {
+    let line = "    Liabilities:Credit:Bank                                     - 619.47 CNY";
+    match parse_line(line) {
+        Line::Posting {
+            account,
+            number,
+            currency,
+            ..
+        } => {
+            assert_eq!(account, "Liabilities:Credit:Bank");
+            assert_eq!(number, Some("- 619.47"));
+            assert_eq!(currency, Some("CNY"));
+        }
+        other => panic!("Expected Posting, got {:?}", other),
+    }
+}
+
+#[test]
 fn posting_number_with_commas() {
     let line = "    Expenses:Food  1,234.56 USD";
     match parse_line(line) {
@@ -771,6 +789,28 @@ fn balance_with_negative_number() {
             assert_eq!(number, "-500.00");
         }
         other => panic!("Expected Balance, got {:?}", other),
+    }
+}
+
+#[test]
+fn balance_with_spaced_negative_number() {
+    let line = "2024-01-01 balance Liabilities:Card - 500.00 CNY";
+    match parse_line(line) {
+        Line::Balance { number, .. } => {
+            assert_eq!(number, "- 500.00");
+        }
+        other => panic!("Expected Balance, got {:?}", other),
+    }
+}
+
+#[test]
+fn price_with_spaced_negative_number() {
+    let line = "2024-01-01 price USD - 0.92 EUR";
+    match parse_line(line) {
+        Line::Price { number, .. } => {
+            assert_eq!(number, "- 0.92");
+        }
+        other => panic!("Expected Price, got {:?}", other),
     }
 }
 
