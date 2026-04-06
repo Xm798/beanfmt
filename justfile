@@ -1,6 +1,6 @@
 # Default recipe: list available commands
 default:
-    @just --list
+    @just --choose
 
 # Build the library (no feature flags)
 build:
