@@ -14,7 +14,7 @@ pub mod sort;
 use align::{align_balance, align_open, align_posting, align_price};
 use line::{Line, parse_line};
 use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
-use options::{Options, SortOrder};
+use options::{Options, SortOrder, SortableDirective};
 use std::borrow::Cow;
 
 pub fn format(input: &str, options: &Options) -> String {
@@ -140,6 +140,37 @@ pub fn format(input: &str, options: &Options) -> String {
             Line::TransactionHeader { .. } => meta_depth = 1,
             Line::MetaItem { .. } | Line::Comment { .. } => {}
             _ => meta_depth = 1,
+        }
+
+        let is_nonexcluded_entry = match parsed {
+            Line::TransactionHeader { .. } => {
+                !options.sort_exclude.contains(&SortableDirective::Transaction)
+            }
+            Line::Balance { .. } => !options.sort_exclude.contains(&SortableDirective::Balance),
+            Line::Open { .. } => !options.sort_exclude.contains(&SortableDirective::Open),
+            Line::Close { .. } => !options.sort_exclude.contains(&SortableDirective::Close),
+            Line::Price { .. } => !options.sort_exclude.contains(&SortableDirective::Price),
+            Line::DateDirective { keyword, .. } => {
+                let directive = match keyword {
+                    "pad" => Some(SortableDirective::Pad),
+                    "note" => Some(SortableDirective::Note),
+                    "document" => Some(SortableDirective::Document),
+                    "event" => Some(SortableDirective::Event),
+                    "custom" => Some(SortableDirective::Custom),
+                    "query" => Some(SortableDirective::Query),
+                    "commodity" => Some(SortableDirective::Commodity),
+                    _ => None,
+                };
+                directive.map_or(true, |d| !options.sort_exclude.contains(&d))
+            }
+            _ => false,
+        };
+        if is_nonexcluded_entry
+            && output_lines
+                .last()
+                .is_some_and(|l| !l.is_empty() && !l.starts_with(';'))
+        {
+            output_lines.push(String::new());
         }
 
         output_lines.push(formatted);
