@@ -27,20 +27,44 @@ pip install beanfmt
 
 ### VSCode 扩展
 
-在 VSCode 扩展商店搜索 `beanfmt`，或通过命令行安装：
+从 [VSCode 扩展商店](https://marketplace.visualstudio.com/items?itemName=cyrus-x.beanfmt) 安装，或通过命令行安装：
 
 ```bash
-code --install-extension beanfmt.beanfmt-beancount-formatter
+code --install-extension cyrus-x.beanfmt
 ```
 
-### 从源码构建
+## 配置
 
-```bash
-cargo install --path .                 # CLI
-maturin develop --features python      # Python（需要 maturin）
+Beanfmt 支持 TOML 配置文件，按以下优先级合并（低 → 高）：
+
+1. 内置默认值
+2. 全局配置：`$XDG_CONFIG_HOME/beanfmt/config.toml`（默认为 `~/.config/beanfmt/config.toml`）
+3. 项目配置：`.beanfmt.toml` 或 `beanfmt.toml`（从当前目录向上查找）
+4. CLI 参数（最高优先级）
+
+示例 `.beanfmt.toml`：
+
+```toml
+indent = 2
+currency_column = 60
+cost_column = 65
+thousands = "add"
+spaces_in_braces = true
+fixed_cjk_width = true
+sort = "asc"    # "asc"、"desc"、"off" 或 true/false
+sort_timeless = "keep"   # "begin"、"end" 或 "keep"
+sort_exclude = ["open", "close"]  # 排除的指令类型作为排序屏障
 ```
 
-> 注意：`python` 和 `wasm` 特性互斥，不能同时启用。
+所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
+
+各入口对配置文件的支持：
+
+| 入口 | 全局配置 | 项目配置 | 说明 |
+|------|---------|---------|------|
+| CLI | 自动加载 | 自动加载 | `--no-config` 可禁用 |
+| Python | 不支持 | 通过 `config=True` 启用 | 也可用 `load_project_config()` 手动加载 |
+| VSCode | 不支持（用户设置替代） | 自动加载（工作区内） | 显式设置覆盖配置文件 |
 
 ## 使用方法
 
@@ -80,39 +104,6 @@ beanfmt --thousands add --sort ledger.beancount
 | `--recursive` | 关闭 | 递归格式化 `include` 引入的文件 |
 | `-w, --write` | 关闭 | 将输出写回文件（原地修改） |
 | `--no-config` | 关闭 | 跳过配置文件加载 |
-
-### 配置文件
-
-Beanfmt 支持 TOML 配置文件，按以下优先级合并（低 → 高）：
-
-1. 内置默认值
-2. 全局配置：`$XDG_CONFIG_HOME/beanfmt/config.toml`（默认为 `~/.config/beanfmt/config.toml`）
-3. 项目配置：`.beanfmt.toml` 或 `beanfmt.toml`（从当前目录向上查找）
-4. CLI 参数（最高优先级）
-
-示例 `.beanfmt.toml`：
-
-```toml
-indent = 2
-currency_column = 60
-cost_column = 65
-thousands = "add"
-spaces_in_braces = true
-fixed_cjk_width = true
-sort = "asc"    # "asc"、"desc"、"off" 或 true/false
-sort_timeless = "keep"   # "begin"、"end" 或 "keep"
-sort_exclude = ["open", "close"]  # 排除的指令类型作为排序屏障
-```
-
-所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
-
-各入口对配置文件的支持：
-
-| 入口 | 全局配置 | 项目配置 | 说明 |
-|------|---------|---------|------|
-| CLI | 自动加载 | 自动加载 | `--no-config` 可禁用 |
-| Python | 不支持 | 通过 `config=True` 启用 | 也可用 `load_project_config()` 手动加载 |
-| VSCode | 不支持（用户设置替代） | 自动加载（工作区内） | 显式设置覆盖配置文件 |
 
 ### Python
 
@@ -166,7 +157,7 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 
 ```jsonc
 "[beancount]": {
-    "editor.defaultFormatter": "beanfmt.beanfmt-beancount-formatter",
+    "editor.defaultFormatter": "cyrus-x.beanfmt",
     "editor.formatOnSave": true
 }
 ```
@@ -186,6 +177,46 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 | `beanfmt.sort` | `"off"` | 按日期排序：`"asc"`、`"desc"`、`"off"` |
 | `beanfmt.sortTimeless` | `"keep"` | 无时间条目在日内的位置：`"begin"`、`"end"`、`"keep"` |
 | `beanfmt.sortExclude` | `[]` | 排除的指令类型（作为排序屏障） |
+
+## 开发
+
+Beanfmt 是一个 Rust workspace，包含四个构建目标——库、CLI、Python（PyO3/maturin）和 WASM（wasm-bindgen），外加一个 VSCode 扩展。
+
+### 环境准备
+
+- [Rust 工具链](https://rustup.rs/)（stable）和 [`just`](https://github.com/casey/just)——所有目标都需要
+- [`uv`](https://docs.astral.sh/uv/)——Python 扩展（驱动 maturin）
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/)——WASM 模块
+- [`bun`](https://bun.sh/)——VSCode 扩展
+
+只构建某个目标时，其余工具按需安装即可。
+
+### 构建
+
+常用任务都封装在 [`just`](https://github.com/casey/just) 命令中：
+
+```bash
+just                # 列出所有命令
+just build          # 构建库
+just build-cli      # 构建 CLI 二进制
+just build-python   # 构建 Python 扩展（uv + maturin）
+just build-wasm     # 构建 WASM 模块
+just build-vscode   # 构建 VSCode 扩展（WASM + TypeScript）
+
+just test           # 运行所有测试
+just clippy         # 运行 clippy 检查
+just fmt            # 格式化代码
+just check          # fmt-check + clippy + test
+```
+
+也可以直接用 Cargo 单独构建某个目标：
+
+```bash
+cargo install --path .                 # CLI
+maturin develop --features python      # Python（需要 maturin）
+```
+
+> 注意：`python` 和 `wasm` 特性互斥，不能同时启用。
 
 ## 许可证
 

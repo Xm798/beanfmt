@@ -29,20 +29,44 @@ pip install beanfmt
 
 ### VSCode Extension
 
-Search for `beanfmt` in the VSCode Marketplace, or install from the command line:
+Install from the [VSCode Marketplace](https://marketplace.visualstudio.com/items?itemName=cyrus-x.beanfmt), or from the command line:
 
 ```bash
-code --install-extension beanfmt.beanfmt-beancount-formatter
+code --install-extension cyrus-x.beanfmt
 ```
 
-### From Source
+## Configuration
 
-```bash
-cargo install --path .                 # CLI
-maturin develop --features python      # Python (requires maturin)
+Beanfmt supports TOML configuration files with a three-layer merge priority (low → high):
+
+1. Built-in defaults
+2. Global config: `$XDG_CONFIG_HOME/beanfmt/config.toml` (defaults to `~/.config/beanfmt/config.toml`)
+3. Project config: `.beanfmt.toml` or `beanfmt.toml` (searched upward from the current directory)
+4. CLI arguments (highest priority)
+
+Example `.beanfmt.toml`:
+
+```toml
+indent = 2
+currency_column = 60
+cost_column = 65
+thousands = "add"
+spaces_in_braces = true
+fixed_cjk_width = true
+sort = "asc"    # "asc", "desc", "off", or true/false
+sort_timeless = "keep"   # "begin", "end", or "keep"
+sort_exclude = ["open", "close"]  # excluded types act as sort barriers
 ```
 
-> Note: `python` and `wasm` features are mutually exclusive.
+All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
+
+Config file support varies by target:
+
+| Target | Global config | Project config | Notes |
+|--------|--------------|----------------|-------|
+| CLI | Auto | Auto | `--no-config` to disable |
+| Python | No | Opt-in via `config=True` | `load_project_config()` for manual loading |
+| VSCode | No (user settings serve this role) | Auto (within workspace) | Explicit settings override config file |
 
 ## Usage
 
@@ -84,39 +108,6 @@ beanfmt --thousands add --sort ledger.beancount
 | `--recursive` | off | Follow and format `include`d files |
 | `-w, --write` | off | Write output back to file (in-place) |
 | `--no-config` | off | Skip loading configuration files |
-
-### Configuration File
-
-Beanfmt supports TOML configuration files with a three-layer merge priority (low → high):
-
-1. Built-in defaults
-2. Global config: `$XDG_CONFIG_HOME/beanfmt/config.toml` (defaults to `~/.config/beanfmt/config.toml`)
-3. Project config: `.beanfmt.toml` or `beanfmt.toml` (searched upward from the current directory)
-4. CLI arguments (highest priority)
-
-Example `.beanfmt.toml`:
-
-```toml
-indent = 2
-currency_column = 60
-cost_column = 65
-thousands = "add"
-spaces_in_braces = true
-fixed_cjk_width = true
-sort = "asc"    # "asc", "desc", "off", or true/false
-sort_timeless = "keep"   # "begin", "end", or "keep"
-sort_exclude = ["open", "close"]  # excluded types act as sort barriers
-```
-
-All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
-
-Config file support varies by target:
-
-| Target | Global config | Project config | Notes |
-|--------|--------------|----------------|-------|
-| CLI | Auto | Auto | `--no-config` to disable |
-| Python | No | Opt-in via `config=True` | `load_project_config()` for manual loading |
-| VSCode | No (user settings serve this role) | Auto (within workspace) | Explicit settings override config file |
 
 ### Python
 
@@ -170,7 +161,7 @@ Install the extension, then configure in `settings.json`:
 
 ```jsonc
 "[beancount]": {
-    "editor.defaultFormatter": "beanfmt.beanfmt-beancount-formatter",
+    "editor.defaultFormatter": "cyrus-x.beanfmt",
     "editor.formatOnSave": true
 }
 ```
@@ -190,6 +181,46 @@ Available settings:
 | `beanfmt.sort` | `"off"` | Sort entries by date: `"asc"`, `"desc"`, `"off"` |
 | `beanfmt.sortTimeless` | `"keep"` | Timeless entry position within a day: `"begin"`, `"end"`, `"keep"` |
 | `beanfmt.sortExclude` | `[]` | Directive types to exclude from sorting (act as sort barriers) |
+
+## Development
+
+Beanfmt is a Rust workspace with four build targets — library, CLI, Python (PyO3/maturin), and WASM (wasm-bindgen) — plus a VSCode extension.
+
+### Prerequisites
+
+- [Rust toolchain](https://rustup.rs/) (stable) and [`just`](https://github.com/casey/just) — required for all targets
+- [`uv`](https://docs.astral.sh/uv/) — Python extension (drives maturin)
+- [`wasm-pack`](https://rustwasm.github.io/wasm-pack/) — WASM module
+- [`bun`](https://bun.sh/) — VSCode extension
+
+You only need the extra tools for the targets you actually build.
+
+### Building
+
+Common tasks are wrapped in [`just`](https://github.com/casey/just) recipes:
+
+```bash
+just                # List all recipes
+just build          # Build the library
+just build-cli      # Build the CLI binary
+just build-python   # Build the Python extension (uv + maturin)
+just build-wasm     # Build the WASM module
+just build-vscode   # Build the VSCode extension (WASM + TypeScript)
+
+just test           # Run all tests
+just clippy         # Run clippy lints
+just fmt            # Format code
+just check          # fmt-check + clippy + test
+```
+
+Or build individual targets directly with Cargo:
+
+```bash
+cargo install --path .                 # CLI
+maturin develop --features python      # Python (requires maturin)
+```
+
+> Note: the `python` and `wasm` features are mutually exclusive.
 
 ## License
 
