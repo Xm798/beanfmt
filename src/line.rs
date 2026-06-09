@@ -125,7 +125,7 @@ static META_RE: LazyLock<Regex> =
 
 // \s? consumes at most one space — preserves original spacing in content field for parsing
 static COMMENT_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\s*)(;;?)\s?(.*?)\s*$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(\s*)(;+)\s?(.*?)\s*$").unwrap());
 
 static BLOCK_DIRECTIVE_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(pushtag|poptag|pushmeta|popmeta)\s+(.*?)\s*$").unwrap());

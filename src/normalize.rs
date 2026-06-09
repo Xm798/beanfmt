@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 
 // \s* consumes all whitespace so normalize_comment can re-emit exactly one space
 static COMMENT_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"^(\s*)(;;?)\s*(.*?)\s*$").unwrap());
+    LazyLock::new(|| Regex::new(r"^(\s*)(;+)\s*(.*?)\s*$").unwrap());
 
 /// Replace leading whitespace with the configured indent string.
 /// Indent depth is determined by dividing leading space count by base width (default 4),
@@ -34,6 +34,13 @@ pub fn normalize_indent(line: &str, indent: usize) -> String {
 
 /// Normalize comment spacing: exactly one space after semicolons, no trailing space if empty.
 pub fn normalize_comment(line: &str) -> String {
+    normalize_comment_aligned(line, 0)
+}
+
+/// Like [`normalize_comment`], but left-pads the leading semicolons to `semi_width`
+/// so content aligns across a block of comments with differing semicolon counts.
+/// A `semi_width` of 0 (or smaller than the line's own semicolon count) means no padding.
+pub fn normalize_comment_aligned(line: &str, semi_width: usize) -> String {
     if let Some(caps) = COMMENT_RE.captures(line) {
         let ws = &caps[1];
         let semis = &caps[2];
@@ -41,7 +48,8 @@ pub fn normalize_comment(line: &str) -> String {
         if content.is_empty() {
             format!("{}{}", ws, semis)
         } else {
-            format!("{}{} {}", ws, semis, content)
+            let width = semi_width.max(semis.len());
+            format!("{}{:<width$} {}", ws, semis, content)
         }
     } else {
         line.to_string()

@@ -13,7 +13,9 @@ pub mod sort;
 
 use align::{align_balance, align_close, align_open, align_posting, align_price};
 use line::{Line, parse_line};
-use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
+use normalize::{
+    normalize_braces, normalize_comment_aligned, normalize_indent, normalize_thousands,
+};
 use options::{Options, SortOrder, SortableDirective};
 use std::borrow::Cow;
 
@@ -36,10 +38,12 @@ pub fn format(input: &str, options: &Options) -> String {
     };
 
     // Step 2: Parse, normalize, and align each line
+    let raw_lines: Vec<&str> = working.lines().collect();
+    let comment_semi_widths = comment_block_semi_widths(&raw_lines);
     let mut output_lines: Vec<String> = Vec::new();
     let mut meta_depth: usize = 1;
 
-    for raw_line in working.lines() {
+    for (i, raw_line) in raw_lines.iter().copied().enumerate() {
         let parsed = parse_line(raw_line);
         let formatted = match parsed {
             Line::BlankLine => String::new(),
@@ -113,7 +117,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 let value = normalize_braces(value, options.spaces_in_braces);
                 format!("{}{key}: {value}", options.indent_str().repeat(meta_depth))
             }
-            Line::Comment { .. } => normalize_comment(raw_line),
+            Line::Comment { .. } => normalize_comment_aligned(raw_line, comment_semi_widths[i]),
             Line::DateDirective {
                 date,
                 keyword,
@@ -189,6 +193,47 @@ pub fn format(input: &str, options: &Options) -> String {
     }
 
     result
+}
+
+/// Leading whitespace and semicolon-run length of a comment line, or `None` if the
+/// line does not begin (after indentation) with `;`. Mirrors the comment grammar of
+/// `COMMENT_RE` but skips the full `parse_line` regex pass for this pre-scan.
+fn comment_prefix(line: &str) -> Option<(&str, usize)> {
+    let indent_len = line.len() - line.trim_start().len();
+    let semis = line[indent_len..]
+        .bytes()
+        .take_while(|&b| b == b';')
+        .count();
+    (semis > 0).then(|| (&line[..indent_len], semis))
+}
+
+/// For each line, the semicolon-prefix width its comment block should align to.
+/// A comment block is a maximal run of consecutive comment lines sharing the same
+/// indentation; the width is the longest semicolon prefix in that run. Non-comment
+/// lines get 0.
+fn comment_block_semi_widths(lines: &[&str]) -> Vec<usize> {
+    let mut widths = vec![0usize; lines.len()];
+    let mut i = 0;
+    while i < lines.len() {
+        let Some((indent, semis)) = comment_prefix(lines[i]) else {
+            i += 1;
+            continue;
+        };
+        let mut max = semis;
+        let mut j = i + 1;
+        while let Some((ind, s)) = lines.get(j).and_then(|l| comment_prefix(l)) {
+            if ind != indent {
+                break;
+            }
+            max = max.max(s);
+            j += 1;
+        }
+        for w in &mut widths[i..j] {
+            *w = max;
+        }
+        i = j;
+    }
+    widths
 }
 
 #[cfg(feature = "wasm")]

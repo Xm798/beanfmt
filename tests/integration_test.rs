@@ -137,6 +137,65 @@ fn comment_empty_content() {
 }
 
 #[test]
+fn block_comment_semicolon_alignment() {
+    // A block of consecutive comments with differing semicolon counts aligns
+    // content to the widest semicolon prefix (mirrors autobean-format).
+    // https://github.com/SEIAROTg/autobean-format/issues/15
+    let input = ";; A\n;;; B\n; C\n;;hello\n;four\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, ";;  A\n;;; B\n;   C\n;;  hello\n;   four\n");
+}
+
+#[test]
+fn block_comment_triple_semicolon_preserved() {
+    let input = ";;; section\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, ";;; section\n");
+}
+
+#[test]
+fn block_comment_alignment_resets_across_blank() {
+    // A blank line ends a block; each block aligns independently.
+    let input = "; a\n;; b\n\n;; c\n; d\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, ";  a\n;; b\n\n;; c\n;  d\n");
+}
+
+#[test]
+fn block_comment_uniform_semicolons_unchanged() {
+    let input = "; one\n; two\n; three\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, "; one\n; two\n; three\n");
+}
+
+#[test]
+fn block_comment_indented_block_aligns_independently() {
+    // A change of indentation splits the run: the top-level block aligns to its
+    // own widest prefix (2), the indented block to its own (3) — no bleed across.
+    let input = ";; top1\n; top2\n    ; in1\n    ;;; in3\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, ";; top1\n;  top2\n    ;   in1\n    ;;; in3\n");
+}
+
+#[test]
+fn block_comment_empty_line_bridges_block() {
+    // An empty ";" line continues the run (so the first line still aligns to the
+    // block max of 3) yet is itself emitted unpadded with no trailing space.
+    let input = "; A\n;\n;;; B\n";
+    let result = format(input, &default_opts());
+    assert_eq!(result, ";   A\n;\n;;; B\n");
+}
+
+#[test]
+fn block_comment_alignment_idempotent() {
+    let input = ";; A\n;;; B\n; C\n;;hello\n;four\n";
+    let once = format(input, &default_opts());
+    let twice = format(&once, &default_opts());
+    assert_eq!(once, twice, "block alignment must be idempotent");
+    assert_eq!(once, ";;  A\n;;; B\n;   C\n;;  hello\n;   four\n");
+}
+
+#[test]
 fn blank_lines_become_empty() {
     let input = "option \"title\" \"X\"\n\n2024-01-01 open Assets:Bank USD\n";
     let result = format(input, &default_opts());
@@ -383,7 +442,8 @@ fn format_normalize_fixture() {
     };
     let result = format(input, &opts);
     assert!(
-        result.contains("; comment without space"),
+        // Padded to width 2: this line forms a block with the following ";;" comment.
+        result.contains(";  comment without space"),
         "Comment should be normalized"
     );
     assert!(

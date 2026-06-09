@@ -56,6 +56,26 @@ fn comment_empty_content() {
     assert_eq!(normalize_comment(";   "), ";");
 }
 
+#[test]
+fn comment_triple_semicolon_not_mangled() {
+    assert_eq!(normalize_comment(";;; B"), ";;; B");
+    assert_eq!(normalize_comment(";;;;deep"), ";;;; deep");
+}
+
+#[test]
+fn comment_aligned_pads_semicolons() {
+    // Pad the semicolon prefix to the target width before the single content space.
+    assert_eq!(normalize_comment_aligned("; C", 3), ";   C");
+    assert_eq!(normalize_comment_aligned(";; A", 3), ";;  A");
+    assert_eq!(normalize_comment_aligned(";;; B", 3), ";;; B");
+}
+
+#[test]
+fn comment_aligned_empty_content_no_trailing() {
+    assert_eq!(normalize_comment_aligned(";", 3), ";");
+    assert_eq!(normalize_comment_aligned("  ;;", 3), "  ;;");
+}
+
 // normalize_thousands Add tests
 
 #[test]
