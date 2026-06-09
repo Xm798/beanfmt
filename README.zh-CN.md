@@ -48,6 +48,7 @@ Beanfmt 支持 TOML 配置文件，按以下优先级合并（低 → 高）：
 indent = 2
 currency_column = 60
 cost_column = 65
+inline_comment_column = 0   # 行内注释对齐列；0 表示不对齐
 thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
@@ -97,6 +98,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--indent <N>` | `4` | 缩进空格数 |
 | `--currency-column <N>` | `70` | 货币对齐目标列 |
 | `--cost-column <N>` | `75` | 成本/价格对齐目标列 |
+| `--inline-comment-column <N>` | `0` | 行内注释（`;`）对齐目标列；`0` 表示不对齐 |
 | `--thousands <MODE>` | `keep` | 千分位分隔符：`add`（添加）、`remove`（移除）、`keep`（保持） |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | 开启 | CJK 双宽度字符对齐 |
