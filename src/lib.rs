@@ -143,9 +143,9 @@ pub fn format(input: &str, options: &Options) -> String {
         }
 
         let is_nonexcluded_entry = match parsed {
-            Line::TransactionHeader { .. } => {
-                !options.sort_exclude.contains(&SortableDirective::Transaction)
-            }
+            Line::TransactionHeader { .. } => !options
+                .sort_exclude
+                .contains(&SortableDirective::Transaction),
             Line::Balance { .. } => !options.sort_exclude.contains(&SortableDirective::Balance),
             Line::Open { .. } => !options.sort_exclude.contains(&SortableDirective::Open),
             Line::Close { .. } => !options.sort_exclude.contains(&SortableDirective::Close),
@@ -161,7 +161,7 @@ pub fn format(input: &str, options: &Options) -> String {
                     "commodity" => Some(SortableDirective::Commodity),
                     _ => None,
                 };
-                directive.map_or(true, |d| !options.sort_exclude.contains(&d))
+                directive.is_none_or(|d| !options.sort_exclude.contains(&d))
             }
             _ => false,
         };
