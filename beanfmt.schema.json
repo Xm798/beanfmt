@@ -24,6 +24,12 @@
       "minimum": 1,
       "description": "Column to align costs (e.g. {100 USD}) to."
     },
+    "inline_comment_column": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "description": "Column to align inline comments (;) to. 0 disables alignment (comment stays one space after the content)."
+    },
     "thousands": {
       "type": "string",
       "default": "keep",

@@ -163,12 +163,109 @@ fn align_posting_with_comment() {
     assert!(result.ends_with("; lunch"));
 }
 
+// --- append_comment / inline comment alignment ---
+
+fn opts_with_comment_col(currency_col: usize, comment_col: usize) -> Options {
+    Options {
+        currency_column: currency_col,
+        cost_column: currency_col + 5,
+        inline_comment_column: comment_col,
+        fixed_cjk_width: true,
+        ..Options::default()
+    }
+}
+
+fn comment_pos(result: &str) -> usize {
+    display_width(&result[..result.find(';').unwrap()], true) + 1
+}
+
+#[test]
+fn append_comment_disabled_uses_single_space() {
+    let opts = opts(50, 55);
+    let result = append_comment(
+        "2000-01-01 close Assets:Foo".to_string(),
+        Some("; x"),
+        &opts,
+    );
+    assert_eq!(result, "2000-01-01 close Assets:Foo ; x");
+}
+
+#[test]
+fn append_comment_none_is_noop() {
+    let opts = opts_with_comment_col(50, 60);
+    let result = append_comment("content".to_string(), None, &opts);
+    assert_eq!(result, "content");
+}
+
+#[test]
+fn append_comment_aligns_to_column() {
+    let opts = opts_with_comment_col(50, 40);
+    let result = append_comment("short".to_string(), Some("; note"), &opts);
+    assert_eq!(comment_pos(&result), 40);
+}
+
+#[test]
+fn append_comment_falls_back_to_single_space_when_too_long() {
+    let opts = opts_with_comment_col(50, 5);
+    let result = append_comment(
+        "this content is already long".to_string(),
+        Some("; note"),
+        &opts,
+    );
+    assert_eq!(result, "this content is already long ; note");
+}
+
+#[test]
+fn append_comment_cjk_width_aware() {
+    // "日本語" is 6 display columns; comment should align past it to column 12.
+    let opts = opts_with_comment_col(50, 12);
+    let result = append_comment("日本語".to_string(), Some("; c"), &opts);
+    assert_eq!(comment_pos(&result), 12);
+}
+
+#[test]
+fn align_balance_with_comment_aligned() {
+    let opts = opts_with_comment_col(50, 70);
+    let result = align_balance(
+        "2024-01-01",
+        "Assets:Bank",
+        "1000.00",
+        "USD",
+        Some("; ok"),
+        &opts,
+    );
+    assert_eq!(comment_pos(&result), 70);
+}
+
+#[test]
+fn align_price_with_comment_aligned() {
+    let opts = opts_with_comment_col(50, 70);
+    let result = align_price("2024-01-01", "USD", "6.89", "CNY", Some("; rate"), &opts);
+    assert_eq!(comment_pos(&result), 70);
+}
+
+#[test]
+fn align_posting_with_comment_aligned() {
+    let opts = opts_with_comment_col(40, 70);
+    let result = align_posting(
+        "    ",
+        "Expenses:Food",
+        Some("25.00"),
+        Some("USD"),
+        None,
+        None,
+        Some("; lunch"),
+        &opts,
+    );
+    assert_eq!(comment_pos(&result), 70);
+}
+
 // --- align_balance ---
 
 #[test]
 fn align_balance_basic() {
     let opts = opts(50, 55);
-    let result = align_balance("2024-01-01", "Assets:Bank", "1000.00", "USD", &opts);
+    let result = align_balance("2024-01-01", "Assets:Bank", "1000.00", "USD", None, &opts);
     let currency_pos = display_width(&result[..result.find("USD").unwrap()], true) + 1;
     assert_eq!(currency_pos, 50);
 }
@@ -178,7 +275,7 @@ fn align_balance_basic() {
 #[test]
 fn align_open_basic() {
     let opts = opts(50, 55);
-    let result = align_open("2024-01-01", "Assets:Bank:Checking", "USD,EUR", &opts);
+    let result = align_open("2024-01-01", "Assets:Bank:Checking", "USD,EUR", None, &opts);
     let currencies_pos = display_width(&result[..result.find("USD,EUR").unwrap()], true) + 1;
     assert_eq!(currencies_pos, 50);
 }
@@ -186,7 +283,7 @@ fn align_open_basic() {
 #[test]
 fn align_open_no_currencies() {
     let opts = opts(50, 55);
-    let result = align_open("2024-01-01", "Assets:Bank:Checking", "", &opts);
+    let result = align_open("2024-01-01", "Assets:Bank:Checking", "", None, &opts);
     assert_eq!(result, "2024-01-01 open Assets:Bank:Checking");
 }
 
@@ -195,7 +292,7 @@ fn align_open_no_currencies() {
 #[test]
 fn align_price_basic() {
     let opts = opts(50, 55);
-    let result = align_price("2024-01-01", "USD", "6.89", "CNY", &opts);
+    let result = align_price("2024-01-01", "USD", "6.89", "CNY", None, &opts);
     let currency_pos = display_width(&result[..result.find("CNY").unwrap()], true) + 1;
     assert_eq!(currency_pos, 50);
 }

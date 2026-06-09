@@ -48,6 +48,7 @@ pub struct FileConfig {
     pub indent: Option<usize>,
     pub currency_column: Option<usize>,
     pub cost_column: Option<usize>,
+    pub inline_comment_column: Option<usize>,
     pub thousands: Option<String>,
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
@@ -62,6 +63,7 @@ impl FileConfig {
             indent: other.indent.or(self.indent),
             currency_column: other.currency_column.or(self.currency_column),
             cost_column: other.cost_column.or(self.cost_column),
+            inline_comment_column: other.inline_comment_column.or(self.inline_comment_column),
             thousands: other.thousands.or(self.thousands),
             spaces_in_braces: other.spaces_in_braces.or(self.spaces_in_braces),
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
@@ -91,6 +93,9 @@ impl FileConfig {
             indent: self.indent.unwrap_or(defaults.indent),
             currency_column: self.currency_column.unwrap_or(defaults.currency_column),
             cost_column: self.cost_column.unwrap_or(defaults.cost_column),
+            inline_comment_column: self
+                .inline_comment_column
+                .unwrap_or(defaults.inline_comment_column),
             thousands_separator,
             spaces_in_braces: self.spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),

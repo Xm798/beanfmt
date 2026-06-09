@@ -17,6 +17,12 @@ currency_column = 70
 # Column to align costs (e.g. {100 USD}) to (default: 75)
 cost_column = 75
 
+# Column to align inline comments (;) to (default: 0)
+#   0 disables alignment — comments stay one space after the content.
+#   A positive value pushes the ; to that column when the content fits,
+#   otherwise the comment falls back to a single trailing space.
+inline_comment_column = 0
+
 # Thousands separator handling: "add", "remove", or "keep" (default: "keep")
 #   "add"    — insert commas: 1000000 → 1,000,000
 #   "remove" — strip commas:  1,000,000 → 1000000

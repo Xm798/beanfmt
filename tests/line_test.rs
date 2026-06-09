@@ -179,6 +179,80 @@ fn posting_with_inline_comment() {
 }
 
 #[test]
+fn balance_directive_with_inline_comment() {
+    let line = "2024-01-01 balance Assets:Bank:Checking 1000.00 USD ; checked";
+    match parse_line(line) {
+        Line::Balance {
+            currency, comment, ..
+        } => {
+            assert_eq!(currency, "USD");
+            assert_eq!(comment, Some("; checked"));
+        }
+        other => panic!("Expected Balance, got {:?}", other),
+    }
+}
+
+#[test]
+fn open_directive_with_inline_comment() {
+    let line = "2024-01-01 open Assets:Bank:Checking USD,EUR ; multi";
+    match parse_line(line) {
+        Line::Open {
+            currencies,
+            comment,
+            ..
+        } => {
+            assert_eq!(currencies, "USD,EUR");
+            assert_eq!(comment, Some("; multi"));
+        }
+        other => panic!("Expected Open, got {:?}", other),
+    }
+}
+
+#[test]
+fn open_directive_comment_only_no_currencies() {
+    let line = "2024-01-01 open Assets:Foo ;just opened";
+    match parse_line(line) {
+        Line::Open {
+            currencies,
+            comment,
+            ..
+        } => {
+            assert_eq!(currencies, "");
+            assert_eq!(comment, Some(";just opened"));
+        }
+        other => panic!("Expected Open, got {:?}", other),
+    }
+}
+
+#[test]
+fn close_directive_with_inline_comment() {
+    let line = "2024-12-31 close Expenses:Old ; done";
+    match parse_line(line) {
+        Line::Close {
+            account, comment, ..
+        } => {
+            assert_eq!(account, "Expenses:Old");
+            assert_eq!(comment, Some("; done"));
+        }
+        other => panic!("Expected Close, got {:?}", other),
+    }
+}
+
+#[test]
+fn price_directive_with_inline_comment() {
+    let line = "2024-01-15 price USD 0.92 EUR ; fx";
+    match parse_line(line) {
+        Line::Price {
+            currency, comment, ..
+        } => {
+            assert_eq!(currency, "EUR");
+            assert_eq!(comment, Some("; fx"));
+        }
+        other => panic!("Expected Price, got {:?}", other),
+    }
+}
+
+#[test]
 fn balance_directive() {
     let line = "2024-01-01 balance Assets:Bank:Checking 1000.00 USD";
     match parse_line(line) {
@@ -187,11 +261,13 @@ fn balance_directive() {
             account,
             number,
             currency,
+            comment,
         } => {
             assert_eq!(date, "2024-01-01");
             assert_eq!(account, "Assets:Bank:Checking");
             assert_eq!(number, "1000.00");
             assert_eq!(currency, "USD");
+            assert_eq!(comment, None);
         }
         other => panic!("Expected Balance, got {:?}", other),
     }
@@ -205,10 +281,12 @@ fn open_directive_with_currencies() {
             date,
             account,
             currencies,
+            comment,
         } => {
             assert_eq!(date, "2024-01-01");
             assert_eq!(account, "Assets:Bank:Checking");
             assert_eq!(currencies, "USD,EUR");
+            assert_eq!(comment, None);
         }
         other => panic!("Expected Open, got {:?}", other),
     }
@@ -218,9 +296,14 @@ fn open_directive_with_currencies() {
 fn close_directive() {
     let line = "2024-12-31 close Expenses:Old";
     match parse_line(line) {
-        Line::Close { date, account } => {
+        Line::Close {
+            date,
+            account,
+            comment,
+        } => {
             assert_eq!(date, "2024-12-31");
             assert_eq!(account, "Expenses:Old");
+            assert_eq!(comment, None);
         }
         other => panic!("Expected Close, got {:?}", other),
     }
@@ -235,11 +318,13 @@ fn price_directive() {
             commodity,
             number,
             currency,
+            comment,
         } => {
             assert_eq!(date, "2024-01-15");
             assert_eq!(commodity, "USD");
             assert_eq!(number, "0.92");
             assert_eq!(currency, "EUR");
+            assert_eq!(comment, None);
         }
         other => panic!("Expected Price, got {:?}", other),
     }
@@ -549,10 +634,12 @@ fn open_without_currencies() {
             date,
             account,
             currencies,
+            comment,
         } => {
             assert_eq!(date, "2024-01-15");
             assert_eq!(account, "Assets:Bank");
             assert_eq!(currencies, "");
+            assert_eq!(comment, None);
         }
         other => panic!("Expected Open, got {:?}", other),
     }

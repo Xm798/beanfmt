@@ -45,6 +45,13 @@
           "maximum": 200,
           "description": "Column to align costs/prices to."
         },
+        "beanfmt.inlineCommentColumn": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 200,
+          "description": "Column to align inline comments (;) to. 0 disables alignment (comment stays one space after content)."
+        },
         "beanfmt.thousandsSeparator": {
           "type": "string",
           "enum": [

@@ -118,6 +118,11 @@ pub struct Options {
     pub indent: usize,
     pub currency_column: usize,
     pub cost_column: usize,
+    /// Column to align inline comments (`;`) to. 0 disables alignment.
+    /// Applies to postings, `balance`, `open`, `close`, and `price`. Transaction
+    /// headers and date directives keep their comment inline (it lives in their
+    /// free-form payload, which may contain a quoted `;`).
+    pub inline_comment_column: usize,
     pub thousands_separator: ThousandsSeparator,
     pub spaces_in_braces: bool,
     pub fixed_cjk_width: bool,
@@ -138,6 +143,7 @@ impl Default for Options {
             indent: 4,
             currency_column: 70,
             cost_column: 75,
+            inline_comment_column: 0,
             thousands_separator: ThousandsSeparator::Keep,
             spaces_in_braces: false,
             fixed_cjk_width: true,

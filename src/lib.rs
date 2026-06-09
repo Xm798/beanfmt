@@ -11,7 +11,7 @@ pub mod options;
 pub mod recursive;
 pub mod sort;
 
-use align::{align_balance, align_open, align_posting, align_price};
+use align::{align_balance, align_close, align_open, align_posting, align_price};
 use line::{Line, parse_line};
 use normalize::{normalize_braces, normalize_comment, normalize_indent, normalize_thousands};
 use options::{Options, SortOrder, SortableDirective};
@@ -79,26 +79,31 @@ pub fn format(input: &str, options: &Options) -> String {
                 account,
                 number,
                 currency,
+                comment,
             } => {
                 let number = normalize_thousands(number, &options.thousands_separator);
-                align_balance(date, account, &number, currency, options)
+                align_balance(date, account, &number, currency, comment, options)
             }
             Line::Open {
                 date,
                 account,
                 currencies,
-            } => align_open(date, account, currencies, options),
-            Line::Close { date, account } => {
-                format!("{date} close {account}")
-            }
+                comment,
+            } => align_open(date, account, currencies, comment, options),
+            Line::Close {
+                date,
+                account,
+                comment,
+            } => align_close(date, account, comment, options),
             Line::Price {
                 date,
                 commodity,
                 number,
                 currency,
+                comment,
             } => {
                 let number = normalize_thousands(number, &options.thousands_separator);
-                align_price(date, commodity, &number, currency, options)
+                align_price(date, commodity, &number, currency, comment, options)
             }
             Line::MetaItem {
                 indent: _,

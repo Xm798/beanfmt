@@ -32,6 +32,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.indent` | `4` | Number of spaces for indentation |
 | `beanfmt.currencyColumn` | `70` | Column to align currencies to |
 | `beanfmt.costColumn` | `75` | Column to align costs/prices to |
+| `beanfmt.inlineCommentColumn` | `0` | Column to align inline comments (`;`) to; `0` disables alignment |
 | `beanfmt.thousandsSeparator` | `"keep"` | Thousands separator: `"add"`, `"remove"`, or `"keep"` |
 | `beanfmt.spacesInBraces` | `false` | Add spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | Treat CJK characters as double-width for alignment |
@@ -71,6 +72,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.indent` | `4` | 缩进空格数 |
 | `beanfmt.currencyColumn` | `70` | 货币对齐列 |
 | `beanfmt.costColumn` | `75` | 成本/价格对齐列 |
+| `beanfmt.inlineCommentColumn` | `0` | 行内注释（`;`）对齐列；`0` 表示不对齐 |
 | `beanfmt.thousandsSeparator` | `"keep"` | 千位分隔符处理：`"add"` 添加、`"remove"` 移除、`"keep"` 保持 |
 | `beanfmt.spacesInBraces` | `false` | 成本花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | 将 CJK 字符视为双宽度进行对齐 |

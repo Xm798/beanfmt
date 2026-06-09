@@ -50,6 +50,7 @@ Example `.beanfmt.toml`:
 indent = 2
 currency_column = 60
 cost_column = 65
+inline_comment_column = 0   # column to align inline comments to; 0 disables
 thousands = "add"
 spaces_in_braces = true
 fixed_cjk_width = true
@@ -99,6 +100,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--indent <N>` | `4` | Number of spaces for indentation |
 | `--currency-column <N>` | `70` | Target column for currency alignment |
 | `--cost-column <N>` | `75` | Target column for cost/price alignment |
+| `--inline-comment-column <N>` | `0` | Target column to align inline comments (`;`) to; `0` disables alignment |
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |

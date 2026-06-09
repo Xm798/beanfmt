@@ -484,3 +484,35 @@ fn posting_with_spaced_negative_amount() {
         card_line
     );
 }
+
+#[test]
+fn inline_comment_column_aligns_across_directives() {
+    let input = concat!(
+        "2024-01-01 open Assets:Bank USD ;opened\n",
+        "2024-01-01 * \"Payee\"\n",
+        "  Assets:Bank  10.00 USD ;deposit\n",
+        "2024-01-02 balance Assets:Bank 10.00 USD ;checked\n",
+        "2024-01-02 price USD 0.92 EUR ;fx\n",
+        "2024-12-31 close Assets:Bank ;done\n",
+    );
+    let opts = Options {
+        currency_column: 30,
+        cost_column: 35,
+        inline_comment_column: 50,
+        ..Options::default()
+    };
+    let result = format(input, &opts);
+    for line in result.lines() {
+        if let Some(idx) = line.find(';') {
+            assert_eq!(idx + 1, 50, "comment should start at column 50: {:?}", line);
+        }
+    }
+}
+
+#[test]
+fn inline_comment_column_disabled_by_default() {
+    let input = "2024-01-02 balance Assets:Bank 10.00 USD ;checked\n";
+    let result = format(input, &default_opts());
+    // No alignment: comment kept one space after the amount, not pushed to a column.
+    assert!(result.contains("USD ;checked"), "got: {:?}", result);
+}

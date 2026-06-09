@@ -5,6 +5,7 @@ declare module "*/wasm" {
     indent: number,
     currency_column: number,
     cost_column: number,
+    inline_comment_column: number,
     thousands: string,
     spaces_in_braces: boolean,
     fixed_cjk_width: boolean,

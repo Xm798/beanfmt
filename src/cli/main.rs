@@ -26,6 +26,10 @@ struct Cli {
     #[arg(long)]
     cost_column: Option<usize>,
 
+    /// Column to align inline comments to (0 disables alignment)
+    #[arg(long)]
+    inline_comment_column: Option<usize>,
+
     /// Thousands separator handling (add, remove, keep)
     #[arg(long)]
     thousands: Option<String>,
@@ -103,6 +107,7 @@ impl Cli {
             indent: self.indent,
             currency_column: self.currency_column,
             cost_column: self.cost_column,
+            inline_comment_column: self.inline_comment_column,
             thousands: self.thousands.clone(),
             spaces_in_braces,
             fixed_cjk_width,

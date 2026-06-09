@@ -24,6 +24,7 @@ interface BeanfmtConfig {
   indent?: number;
   currency_column?: number;
   cost_column?: number;
+  inline_comment_column?: number;
   thousands?: string;
   spaces_in_braces?: boolean;
   fixed_cjk_width?: boolean;
@@ -38,6 +39,8 @@ function validateConfig(raw: Record<string, unknown>): BeanfmtConfig {
   if (typeof raw.currency_column === "number")
     config.currency_column = raw.currency_column;
   if (typeof raw.cost_column === "number") config.cost_column = raw.cost_column;
+  if (typeof raw.inline_comment_column === "number")
+    config.inline_comment_column = raw.inline_comment_column;
   if (typeof raw.thousands === "string") config.thousands = raw.thousands;
   if (typeof raw.spaces_in_braces === "boolean")
     config.spaces_in_braces = raw.spaces_in_braces;
@@ -146,6 +149,15 @@ export async function activate(
           1,
           200,
         );
+        const inlineCommentColumn = clamp(
+          resolve(
+            "inlineCommentColumn",
+            projectConfig.inline_comment_column,
+            0,
+          ),
+          0,
+          200,
+        );
         const thousandsSeparator = resolve(
           "thousandsSeparator",
           projectConfig.thousands,
@@ -184,6 +196,7 @@ export async function activate(
             indent,
             currencyColumn,
             costColumn,
+            inlineCommentColumn,
             thousandsSeparator,
             spacesInBraces,
             fixedCJKWidth,

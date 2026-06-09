@@ -19,6 +19,21 @@ pub fn display_width(s: &str, fixed_cjk_width: bool) -> usize {
     }
 }
 
+/// Append an inline comment to `result`, aligning its `;` to `inline_comment_column`
+/// (1-indexed) when set. A column of 0 keeps the comment one space after the content.
+/// When the content already reaches or passes the target column, a single space is used.
+pub fn append_comment(result: String, comment: Option<&str>, options: &Options) -> String {
+    let Some(comment) = comment else {
+        return result;
+    };
+    if options.inline_comment_column == 0 {
+        return format!("{result} {comment}");
+    }
+    let current = display_width(&result, options.fixed_cjk_width);
+    let padding = compute_padding(options.inline_comment_column, current, 1);
+    format!("{result}{:padding$}{comment}", "")
+}
+
 /// Right-pad a string with spaces to reach `target_width` display columns.
 /// If already at or beyond target, append a single space.
 pub fn pad_to_width(s: &str, target_width: usize, fixed_cjk_width: bool) -> String {
@@ -47,10 +62,7 @@ pub fn align_posting(
 
     // Account-only posting (no amount)
     let (Some(number), Some(currency)) = (number, currency) else {
-        return match comment {
-            Some(c) => format!("{indent}{account} {c}"),
-            None => format!("{indent}{account}"),
-        };
+        return append_comment(format!("{indent}{account}"), comment, options);
     };
 
     let prefix_width = display_width(indent, cjk) + display_width(account, cjk);
@@ -76,11 +88,7 @@ pub fn align_posting(
         result = format!("{result} {price}");
     }
 
-    if let Some(comment) = comment {
-        result = format!("{result} {comment}");
-    }
-
-    result
+    append_comment(result, comment, options)
 }
 
 /// Align a balance directive so currency starts at `currency_column`.
@@ -89,6 +97,7 @@ pub fn align_balance(
     account: &str,
     number: &str,
     currency: &str,
+    comment: Option<&str>,
     options: &Options,
 ) -> String {
     let cjk = options.fixed_cjk_width;
@@ -99,13 +108,20 @@ pub fn align_balance(
     let min_before = prefix_width + num_width + 1;
     let padding = compute_padding(options.currency_column, min_before, 2);
 
-    format!("{prefix}{:padding$}{number} {currency}", "")
+    let result = format!("{prefix}{:padding$}{number} {currency}", "");
+    append_comment(result, comment, options)
 }
 
 /// Align an open directive so currencies start at `currency_column`.
-pub fn align_open(date: &str, account: &str, currencies: &str, options: &Options) -> String {
+pub fn align_open(
+    date: &str,
+    account: &str,
+    currencies: &str,
+    comment: Option<&str>,
+    options: &Options,
+) -> String {
     if currencies.is_empty() {
-        return format!("{date} open {account}");
+        return append_comment(format!("{date} open {account}"), comment, options);
     }
 
     let cjk = options.fixed_cjk_width;
@@ -114,7 +130,13 @@ pub fn align_open(date: &str, account: &str, currencies: &str, options: &Options
 
     let padding = compute_padding(options.currency_column, prefix_width, 2);
 
-    format!("{prefix}{:padding$}{currencies}", "")
+    let result = format!("{prefix}{:padding$}{currencies}", "");
+    append_comment(result, comment, options)
+}
+
+/// Assemble a close directive, aligning any inline comment.
+pub fn align_close(date: &str, account: &str, comment: Option<&str>, options: &Options) -> String {
+    append_comment(format!("{date} close {account}"), comment, options)
 }
 
 /// Align a price directive so currency starts at `currency_column`.
@@ -123,6 +145,7 @@ pub fn align_price(
     commodity: &str,
     number: &str,
     currency: &str,
+    comment: Option<&str>,
     options: &Options,
 ) -> String {
     let cjk = options.fixed_cjk_width;
@@ -133,5 +156,6 @@ pub fn align_price(
     let min_before = prefix_width + num_width + 1;
     let padding = compute_padding(options.currency_column, min_before, 2);
 
-    format!("{prefix}{:padding$}{number} {currency}", "")
+    let result = format!("{prefix}{:padding$}{number} {currency}", "");
+    append_comment(result, comment, options)
 }

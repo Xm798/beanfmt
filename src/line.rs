@@ -30,21 +30,25 @@ pub enum Line<'a> {
         account: &'a str,
         number: &'a str,
         currency: &'a str,
+        comment: Option<&'a str>,
     },
     Open {
         date: &'a str,
         account: &'a str,
         currencies: &'a str,
+        comment: Option<&'a str>,
     },
     Close {
         date: &'a str,
         account: &'a str,
+        comment: Option<&'a str>,
     },
     Price {
         date: &'a str,
         commodity: &'a str,
         number: &'a str,
         currency: &'a str,
+        comment: Option<&'a str>,
     },
     MetaItem {
         indent: &'a str,
@@ -90,24 +94,28 @@ static POSTING_RE: LazyLock<Regex> = LazyLock::new(|| {
 
 static BALANCE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(
-        r"^({DATE})\s+balance\s+({ACCOUNT})\s+({NUMBER})\s+({CURRENCY})\s*$"
+        r"^({DATE})\s+balance\s+({ACCOUNT})\s+({NUMBER})\s+({CURRENCY})(?:\s+(;.*))?\s*$"
     ))
     .unwrap()
 });
 
 static OPEN_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(
-        r"^({DATE})\s+open\s+({ACCOUNT})(?:\s+(.*\S))?\s*$"
+        r"^({DATE})\s+open\s+({ACCOUNT})(?:\s+([^;].*?\S))?(?:\s+(;.*))?\s*$"
     ))
     .unwrap()
 });
 
-static CLOSE_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(&format!(r"^({DATE})\s+close\s+({ACCOUNT})\s*$")).unwrap());
+static CLOSE_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(&format!(
+        r"^({DATE})\s+close\s+({ACCOUNT})(?:\s+(;.*))?\s*$"
+    ))
+    .unwrap()
+});
 
 static PRICE_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(&format!(
-        r"^({DATE})\s+price\s+({CURRENCY})\s+({NUMBER})\s+({CURRENCY})\s*$"
+        r"^({DATE})\s+price\s+({CURRENCY})\s+({NUMBER})\s+({CURRENCY})(?:\s+(;.*))?\s*$"
     ))
     .unwrap()
 });
@@ -151,6 +159,7 @@ pub fn parse_line(line: &str) -> Line<'_> {
             account: caps.get(2).unwrap().as_str(),
             number: caps.get(3).unwrap().as_str(),
             currency: caps.get(4).unwrap().as_str(),
+            comment: caps.get(5).map(|m| m.as_str()),
         };
     }
 
@@ -159,6 +168,7 @@ pub fn parse_line(line: &str) -> Line<'_> {
             date: caps.get(1).unwrap().as_str(),
             account: caps.get(2).unwrap().as_str(),
             currencies: caps.get(3).map(|m| m.as_str()).unwrap_or(""),
+            comment: caps.get(4).map(|m| m.as_str()),
         };
     }
 
@@ -166,6 +176,7 @@ pub fn parse_line(line: &str) -> Line<'_> {
         return Line::Close {
             date: caps.get(1).unwrap().as_str(),
             account: caps.get(2).unwrap().as_str(),
+            comment: caps.get(3).map(|m| m.as_str()),
         };
     }
 
@@ -175,6 +186,7 @@ pub fn parse_line(line: &str) -> Line<'_> {
             commodity: caps.get(2).unwrap().as_str(),
             number: caps.get(3).unwrap().as_str(),
             currency: caps.get(4).unwrap().as_str(),
+            comment: caps.get(5).map(|m| m.as_str()),
         };
     }
 
