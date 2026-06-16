@@ -29,28 +29,28 @@
           "default": 4,
           "minimum": 1,
           "maximum": 20,
-          "description": "Number of spaces for indentation."
+          "description": "Number of spaces for indentation. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.currencyColumn": {
           "type": "number",
           "default": 70,
           "minimum": 1,
           "maximum": 200,
-          "description": "Column to align currencies to."
+          "description": "Column to align currencies to. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.costColumn": {
           "type": "number",
           "default": 75,
           "minimum": 1,
           "maximum": 200,
-          "description": "Column to align costs/prices to."
+          "description": "Column to align costs/prices to. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.inlineCommentColumn": {
           "type": "number",
           "default": 0,
           "minimum": 0,
           "maximum": 200,
-          "description": "Column to align inline comments (;) to. 0 disables alignment (comment stays one space after content)."
+          "description": "Column to align inline comments (;) to. 0 disables alignment (comment stays one space after content). Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.thousandsSeparator": {
           "type": "string",
@@ -60,29 +60,29 @@
             "remove"
           ],
           "default": "keep",
-          "description": "Thousands separator handling: keep as-is, add commas, or remove them."
+          "description": "Thousands separator handling: keep as-is, add commas, or remove them. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.spacesInBraces": {
           "type": "boolean",
           "default": false,
-          "description": "Add spaces inside cost braces, e.g. { 100 USD } instead of {100 USD}."
+          "description": "Add spaces inside cost braces, e.g. { 100 USD } instead of {100 USD}. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.fixedCJKWidth": {
           "type": "boolean",
           "default": true,
-          "description": "Treat CJK (East Asian) characters as double-width for alignment."
+          "description": "Treat CJK (East Asian) characters as double-width for alignment. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.sort": {
           "type": "string",
           "enum": ["off", "asc", "desc"],
           "default": "off",
-          "description": "Sort entries by date: off (no sorting), asc (ascending), or desc (descending)."
+          "description": "Sort entries by date: off (no sorting), asc (ascending), or desc (descending). Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.sortTimeless": {
           "type": "string",
           "enum": ["begin", "end", "keep"],
           "default": "keep",
-          "description": "Where to place entries without time metadata within a day: begin (before timed entries), end (after timed entries), or keep (preserve original order)."
+          "description": "Where to place entries without time metadata within a day: begin (before timed entries), end (after timed entries), or keep (preserve original order). Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
         "beanfmt.sortExclude": {
           "type": "array",
@@ -91,7 +91,7 @@
             "enum": ["transaction", "balance", "open", "close", "price", "pad", "note", "document", "event", "custom", "query", "commodity"]
           },
           "default": [],
-          "description": "Directive types to exclude from sorting. Excluded directives act as sort barriers."
+          "description": "Directive types to exclude from sorting. Excluded directives act as sort barriers. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         }
       }
     },

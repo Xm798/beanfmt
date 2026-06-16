@@ -67,7 +67,7 @@ Config file support varies by target:
 |--------|--------------|----------------|-------|
 | CLI | Auto | Auto | `--no-config` to disable |
 | Python | No | Opt-in via `config=True` | `load_project_config()` for manual loading |
-| VSCode | No (user settings serve this role) | Auto (within workspace) | Explicit settings override config file |
+| VSCode | No (user settings serve this role) | Auto (within workspace) | Config file is the source of truth; settings are a fallback when absent |
 
 ## Usage
 
@@ -168,7 +168,7 @@ Install the extension, then configure in `settings.json`:
 }
 ```
 
-The extension automatically reads `.beanfmt.toml` or `beanfmt.toml` from the workspace (searching from the file's directory up to the workspace root). Explicit VSCode settings override config file values; unset settings fall back to the config file, then to built-in defaults.
+The extension automatically reads `.beanfmt.toml` or `beanfmt.toml` from the workspace (searching from the file's directory up to the workspace root). The config file is the single source of truth: when one is present, the VSCode `beanfmt.*` settings are ignored entirely (keys the file omits fall back to built-in defaults), so format-on-save matches the CLI and CI. The VSCode settings only take effect when no config file is found.
 
 Available settings:
 

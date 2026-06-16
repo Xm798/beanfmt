@@ -57,11 +57,15 @@ function validateConfig(raw: Record<string, unknown>): BeanfmtConfig {
   return config;
 }
 
+// Returns the parsed project config when a config file is found, or `null`
+// when none exists. The distinction matters: a present config file is the
+// single source of truth (editor settings are ignored), so callers must be
+// able to tell "no file" apart from "file with no keys set".
 async function findProjectConfig(
   documentUri: vscode.Uri,
-): Promise<BeanfmtConfig> {
+): Promise<BeanfmtConfig | null> {
   const workspaceFolder = vscode.workspace.getWorkspaceFolder(documentUri);
-  if (!workspaceFolder) return {};
+  if (!workspaceFolder) return null;
 
   const fileDirParts = path.dirname(documentUri.fsPath).split(path.sep);
   const rootParts = workspaceFolder.uri.fsPath.split(path.sep);
@@ -80,13 +84,15 @@ async function findProjectConfig(
           vscode.window.showWarningMessage(
             `[beanfmt] Failed to parse ${name}: ${err.message}`,
           );
-          return {};
+          // A file exists but is unusable — fall back to editor settings
+          // rather than silently formatting with built-in defaults.
+          return null;
         }
         // File not found — continue searching up
       }
     }
   }
-  return {};
+  return null;
 }
 
 export async function activate(
@@ -108,80 +114,72 @@ export async function activate(
         const projectConfig = await findProjectConfig(document.uri);
         const config = vscode.workspace.getConfiguration("beanfmt");
 
-        // Helper: use explicit user setting if set, else project config, else default.
-        // Uses config.inspect() to distinguish explicitly-set values from defaults.
+        // Prettier model: a project config file is the single source of truth.
+        // When `.beanfmt.toml` is present, editor settings are ignored entirely
+        // (even for keys it omits, which fall back to built-in defaults) so that
+        // format-on-save matches the `beanfmt` CLI / CI exactly. Only when no
+        // config file exists do explicit editor settings act as the config.
+        const pc = projectConfig ?? {};
+
         function resolve<T>(
           key: string,
           projectVal: T | undefined,
           fallback: T,
         ): T {
+          if (projectConfig !== null) {
+            return projectVal !== undefined ? projectVal : fallback;
+          }
+          // No config file — use explicit editor setting, else default.
+          // config.inspect() distinguishes explicitly-set values from defaults.
           const inspected = config.inspect<T>(key);
-          // Explicit user setting at any level overrides project config
           const explicit =
             inspected?.workspaceFolderValue ??
             inspected?.workspaceValue ??
             inspected?.globalValue;
           if (explicit !== undefined) return explicit;
-          if (projectVal !== undefined) return projectVal;
           return fallback;
         }
 
         // Normalize sort from config file (may be boolean)
         const projectSort =
-          projectConfig.sort === true
+          pc.sort === true
             ? "asc"
-            : projectConfig.sort === false
+            : pc.sort === false
               ? "off"
-              : (projectConfig.sort as string | undefined);
+              : (pc.sort as string | undefined);
 
-        const indent = clamp(
-          resolve("indent", projectConfig.indent, 4),
-          1,
-          20,
-        );
+        const indent = clamp(resolve("indent", pc.indent, 4), 1, 20);
         const currencyColumn = clamp(
-          resolve("currencyColumn", projectConfig.currency_column, 70),
+          resolve("currencyColumn", pc.currency_column, 70),
           1,
           200,
         );
         const costColumn = clamp(
-          resolve("costColumn", projectConfig.cost_column, 75),
+          resolve("costColumn", pc.cost_column, 75),
           1,
           200,
         );
         const inlineCommentColumn = clamp(
-          resolve(
-            "inlineCommentColumn",
-            projectConfig.inline_comment_column,
-            0,
-          ),
+          resolve("inlineCommentColumn", pc.inline_comment_column, 0),
           0,
           200,
         );
         const thousandsSeparator = resolve(
           "thousandsSeparator",
-          projectConfig.thousands,
+          pc.thousands,
           "keep",
         );
         const spacesInBraces = resolve(
           "spacesInBraces",
-          projectConfig.spaces_in_braces,
+          pc.spaces_in_braces,
           false,
         );
-        const fixedCJKWidth = resolve(
-          "fixedCJKWidth",
-          projectConfig.fixed_cjk_width,
-          true,
-        );
+        const fixedCJKWidth = resolve("fixedCJKWidth", pc.fixed_cjk_width, true);
         const sort = resolve("sort", projectSort, "off");
-        const sortTimeless = resolve(
-          "sortTimeless",
-          projectConfig.sort_timeless,
-          "keep",
-        );
+        const sortTimeless = resolve("sortTimeless", pc.sort_timeless, "keep");
         const sortExcludeRaw = resolve(
           "sortExclude",
-          projectConfig.sort_exclude,
+          pc.sort_exclude,
           [] as string[],
         );
         const sortExclude =
