@@ -8,8 +8,8 @@
 # Priority: CLI flags > project config > global config > built-in defaults
 # All fields are optional; omitted fields use built-in defaults.
 
-# Number of spaces for indentation (default: 4)
-indent = 4
+# Number of spaces for indentation (default: 2)
+indent = 2
 
 # Column to align currencies to (default: 70)
 currency_column = 70

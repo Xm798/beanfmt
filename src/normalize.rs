@@ -7,7 +7,7 @@ static COMMENT_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^(\s*)(;+)\s*(.*?)\s*$").unwrap());
 
 /// Replace leading whitespace with the configured indent string.
-/// Indent depth is determined by dividing leading space count by base width (default 4),
+/// Indent depth is determined by dividing leading space count by base width (default 2),
 /// rounding up, with a minimum of 1.
 pub fn normalize_indent(line: &str, indent: usize) -> String {
     if line.is_empty() || !line.starts_with(|c: char| c.is_whitespace()) {

@@ -97,7 +97,7 @@ beanfmt --thousands add --sort ledger.beancount
 
 | Flag | Default | Description |
 |------|---------|-------------|
-| `--indent <N>` | `4` | Number of spaces for indentation |
+| `--indent <N>` | `2` | Number of spaces for indentation |
 | `--currency-column <N>` | `70` | Target column for currency alignment |
 | `--cost-column <N>` | `75` | Target column for cost/price alignment |
 | `--inline-comment-column <N>` | `0` | Target column to align inline comments (`;`) to; `0` disables alignment |
@@ -174,7 +174,7 @@ Available settings:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `beanfmt.indent` | `4` | Number of spaces for indentation |
+| `beanfmt.indent` | `2` | Number of spaces for indentation |
 | `beanfmt.currencyColumn` | `70` | Currency alignment column |
 | `beanfmt.costColumn` | `75` | Cost/price alignment column |
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |

@@ -95,7 +95,7 @@ beanfmt --thousands add --sort ledger.beancount
 
 | 参数 | 默认值 | 说明 |
 |------|--------|------|
-| `--indent <N>` | `4` | 缩进空格数 |
+| `--indent <N>` | `2` | 缩进空格数 |
 | `--currency-column <N>` | `70` | 货币对齐目标列 |
 | `--cost-column <N>` | `75` | 成本/价格对齐目标列 |
 | `--inline-comment-column <N>` | `0` | 行内注释（`;`）对齐目标列；`0` 表示不对齐 |
@@ -170,7 +170,7 @@ const output = format(source, 4, 70, 75, "keep", false, true, false);
 
 | 设置项 | 默认值 | 说明 |
 |--------|--------|------|
-| `beanfmt.indent` | `4` | 缩进空格数 |
+| `beanfmt.indent` | `2` | 缩进空格数 |
 | `beanfmt.currencyColumn` | `70` | 货币对齐列 |
 | `beanfmt.costColumn` | `75` | 成本/价格对齐列 |
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |

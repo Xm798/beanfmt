@@ -140,7 +140,7 @@ impl Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            indent: 4,
+            indent: 2,
             currency_column: 70,
             cost_column: 75,
             inline_comment_column: 0,

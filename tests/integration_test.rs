@@ -36,11 +36,11 @@ fn basic_transaction_with_postings() {
     let input = "2024-01-20 * \"Shop\" \"Groceries\"\n  Expenses:Food  50.00 USD\n  Assets:Bank  -50.00 USD\n";
     let result = format(input, &default_opts());
 
-    // Each posting should use the configured indent (4 spaces)
+    // Each posting should use the configured indent (default 2 spaces)
     for line in result.lines().skip(1) {
         assert!(
-            line.starts_with("    "),
-            "posting should start with 4-space indent: {:?}",
+            line.starts_with("  "),
+            "posting should start with 2-space indent: {:?}",
             line
         );
     }
@@ -539,7 +539,7 @@ fn posting_with_spaced_negative_amount() {
     let lines: Vec<&str> = result.lines().collect();
     let card_line = lines.iter().find(|l| l.contains("source")).unwrap();
     assert!(
-        card_line.starts_with("        "),
+        card_line.starts_with("    "),
         "Posting sub-metadata should have double indent: '{}'",
         card_line
     );

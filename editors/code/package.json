@@ -26,7 +26,7 @@
       "properties": {
         "beanfmt.indent": {
           "type": "number",
-          "default": 4,
+          "default": 2,
           "minimum": 1,
           "maximum": 20,
           "description": "Number of spaces for indentation. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
