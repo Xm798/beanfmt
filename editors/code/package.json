@@ -84,6 +84,19 @@
           "maximum": 20,
           "description": "Number of fractional digits to pad to when beanfmt.decimalMode is \"pad\". Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
+        "beanfmt.amountScope": {
+          "type": "string",
+          "enum": [
+            "all",
+            "amounts"
+          ],
+          "enumDescriptions": [
+            "Normalize posting and balance amounts plus costs, price annotations and price directives",
+            "Normalize posting and balance amounts only"
+          ],
+          "default": "all",
+          "description": "Which numbers thousands separator and decimal normalization apply to. Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
+        },
         "beanfmt.spacesInBraces": {
           "type": "boolean",
           "default": false,

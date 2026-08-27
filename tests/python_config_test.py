@@ -246,6 +246,80 @@ class TestDecimalOptions:
 
 
 # ---------------------------------------------------------------------------
+# amount_scope
+# ---------------------------------------------------------------------------
+
+
+class TestAmountScope:
+    SOURCE = (
+        '2024-01-01 * "Buy"\n'
+        "  Assets:Stock  1000.5 USD {1500 CNY} @ 1000.5 CNY\n"
+        "2024-01-02 balance Assets:Bank  1000.5 USD\n"
+        "2024-01-03 price AAPL  1000.5 USD\n"
+    )
+
+    def _fmt(self, **kwargs):
+        return beanfmt.format(
+            self.SOURCE, thousands_separator="add", decimal_mode="pad", **kwargs
+        )
+
+    def test_default_is_all(self):
+        assert self._fmt() == (
+            '2024-01-01 * "Buy"\n'
+            "  Assets:Stock                                              "
+            "1,000.50 USD  {1,500.00 CNY} @ 1,000.50 CNY\n"
+            "\n"
+            "2024-01-02 balance Assets:Bank                              1,000.50 USD\n"
+            "\n"
+            "2024-01-03 price AAPL                                       1,000.50 USD\n"
+        )
+
+    def test_amounts_leaves_cost_and_prices(self):
+        assert self._fmt(amount_scope="amounts") == (
+            '2024-01-01 * "Buy"\n'
+            "  Assets:Stock                                              "
+            "1,000.50 USD  {1500 CNY} @ 1000.5 CNY\n"
+            "\n"
+            "2024-01-02 balance Assets:Bank                              1,000.50 USD\n"
+            "\n"
+            "2024-01-03 price AAPL                                         1000.5 USD\n"
+        )
+
+    def test_invalid_scope_raises(self):
+        with pytest.raises(ValueError):
+            beanfmt.format(self.SOURCE, amount_scope="costs")
+
+    def test_options_object(self):
+        opts = beanfmt.Options(
+            thousands_separator="add", decimal_mode="pad", amount_scope="amounts"
+        )
+        assert "amount_scope='amounts'" in repr(opts)
+        assert "{1500 CNY} @ 1000.5 CNY" in beanfmt.format(self.SOURCE, options=opts)
+
+    def test_from_config_file(self):
+        opts = beanfmt.parse_config('amount_scope = "amounts"\n')
+        assert "amount_scope='amounts'" in repr(opts)
+
+    def test_config_file_invalid_scope(self):
+        with pytest.raises(ValueError):
+            beanfmt.parse_config('amount_scope = "costs"\n')
+
+    def test_kwarg_overrides_config_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, ".beanfmt.toml"), "w") as f:
+                f.write(
+                    'thousands = "add"\ndecimal_mode = "pad"\namount_scope = "amounts"\n'
+                )
+            path = os.path.join(d, "test.bean")
+            with open(path, "w") as f:
+                f.write(self.SOURCE)
+            result = beanfmt.format_file(path, config=True)
+            assert "{1500 CNY} @ 1000.5 CNY" in result
+            result = beanfmt.format_file(path, config=True, amount_scope="all")
+            assert "{1,500.00 CNY} @ 1,000.50 CNY" in result
+
+
+# ---------------------------------------------------------------------------
 # format_recursive with config param
 # ---------------------------------------------------------------------------
 

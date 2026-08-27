@@ -4,7 +4,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::options::{
-    DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition,
+    AmountScope, DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator,
+    TimelessPosition,
 };
 
 impl<'de> Deserialize<'de> for SortOrder {
@@ -46,7 +47,12 @@ macro_rules! impl_deserialize_from_str {
     };
 }
 
-impl_deserialize_from_str!(SortableDirective, TimelessPosition, DecimalMode);
+impl_deserialize_from_str!(
+    SortableDirective,
+    TimelessPosition,
+    DecimalMode,
+    AmountScope
+);
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct FileConfig {
@@ -57,6 +63,7 @@ pub struct FileConfig {
     pub thousands: Option<String>,
     pub decimal_mode: Option<DecimalMode>,
     pub decimal_places: Option<usize>,
+    pub amount_scope: Option<AmountScope>,
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
     pub sort: Option<SortOrder>,
@@ -74,6 +81,7 @@ impl FileConfig {
             thousands: other.thousands.or(self.thousands),
             decimal_mode: other.decimal_mode.or(self.decimal_mode),
             decimal_places: other.decimal_places.or(self.decimal_places),
+            amount_scope: other.amount_scope.or(self.amount_scope),
             spaces_in_braces: other.spaces_in_braces.or(self.spaces_in_braces),
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
             sort: other.sort.or(self.sort),
@@ -108,6 +116,7 @@ impl FileConfig {
             thousands_separator,
             decimal_mode: self.decimal_mode.unwrap_or(defaults.decimal_mode),
             decimal_places: self.decimal_places.unwrap_or(defaults.decimal_places),
+            amount_scope: self.amount_scope.unwrap_or(defaults.amount_scope),
             spaces_in_braces: self.spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
             sort: self.sort.unwrap_or(defaults.sort),
@@ -467,6 +476,25 @@ thousands = "add"
         let config: FileConfig = toml::from_str("decimal_places = 4").unwrap();
         assert_eq!(config.decimal_places, Some(4));
         assert_eq!(config.into_options().decimal_places, 4);
+    }
+
+    #[test]
+    fn load_amount_scope_from_toml() {
+        let config: FileConfig = toml::from_str(r#"amount_scope = "amounts""#).unwrap();
+        assert_eq!(config.amount_scope, Some(AmountScope::Amounts));
+        assert_eq!(config.into_options().amount_scope, AmountScope::Amounts);
+    }
+
+    #[test]
+    fn load_amount_scope_invalid() {
+        let result: Result<FileConfig, _> = toml::from_str(r#"amount_scope = "costs""#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn amount_scope_defaults_to_all() {
+        let options = FileConfig::default().into_options();
+        assert_eq!(options.amount_scope, AmountScope::All);
     }
 
     #[test]

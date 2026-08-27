@@ -1,5 +1,5 @@
 use crate::line::{CURRENCY, NUMBER};
-use crate::options::{DecimalMode, Options, ThousandsSeparator};
+use crate::options::{AmountScope, DecimalMode, Options, ThousandsSeparator};
 use regex::Regex;
 use std::borrow::Cow;
 use std::sync::LazyLock;
@@ -59,12 +59,17 @@ pub fn normalize_comment_aligned(line: &str, semi_width: usize) -> String {
 }
 
 /// Normalize thousands separators on an extracted number string.
-pub fn normalize_thousands(num_str: &str, separator: &ThousandsSeparator) -> String {
-    // Strip any space between sign and digits (e.g., "- 619.47" → "-619.47")
-    let num_str = &num_str.replace(' ', "");
+pub fn normalize_thousands<'a>(num_str: &'a str, separator: &ThousandsSeparator) -> Cow<'a, str> {
+    // The sign may be detached from the digits (e.g. "- 619.47"); it is still one number.
+    let num_str: Cow<'a, str> = if num_str.contains(' ') {
+        Cow::Owned(num_str.replace(' ', ""))
+    } else {
+        Cow::Borrowed(num_str)
+    };
+
     match separator {
-        ThousandsSeparator::Keep => num_str.to_string(),
-        ThousandsSeparator::Remove => num_str.replace(',', ""),
+        ThousandsSeparator::Keep => num_str,
+        ThousandsSeparator::Remove => Cow::Owned(num_str.replace(',', "")),
         ThousandsSeparator::Add => {
             let stripped = num_str.replace(',', "");
 
@@ -86,10 +91,10 @@ pub fn normalize_thousands(num_str: &str, separator: &ThousandsSeparator) -> Str
             // Insert commas every 3 digits from the right
             let int_with_commas = add_commas(int_part);
 
-            match dec_part {
+            Cow::Owned(match dec_part {
                 Some(dec) => format!("{}{}{}", sign, int_with_commas, dec),
                 None => format!("{}{}", sign, int_with_commas),
-            }
+            })
         }
     }
 }
@@ -125,19 +130,23 @@ pub fn normalize_decimals(num_str: &str, mode: DecimalMode, places: usize) -> St
 }
 
 /// Apply thousands separators and decimal normalization to an extracted number string.
-pub fn normalize_number(number: &str, options: &Options) -> String {
+pub fn normalize_number<'a>(number: &'a str, options: &Options) -> Cow<'a, str> {
     let number = normalize_thousands(number, &options.thousands_separator);
     match options.decimal_mode {
         DecimalMode::Keep => number,
-        mode => normalize_decimals(&number, mode, options.decimal_places),
+        mode => Cow::Owned(normalize_decimals(&number, mode, options.decimal_places)),
     }
 }
 
-/// Normalize the fractional digits of the first `<number> <CURRENCY>` amount in a
-/// cost annotation (`{...}`, `{{...}}`) or a price annotation (`@`, `@@`).
+/// Normalize the first `<number> <CURRENCY>` amount embedded in a larger fragment such as
+/// a cost annotation (`{...}`, `{{...}}`) or a price annotation (`@`, `@@`).
 /// Requiring a currency after the number keeps dates such as `{2024-01-01}` intact.
-pub fn normalize_amount_decimals(s: &str, mode: DecimalMode, places: usize) -> Cow<'_, str> {
-    if mode == DecimalMode::Keep {
+/// Such fragments lie outside [`AmountScope::Amounts`], which leaves them as written.
+pub fn normalize_amount<'a>(s: &'a str, options: &Options) -> Cow<'a, str> {
+    if options.amount_scope != AmountScope::All
+        || (options.thousands_separator == ThousandsSeparator::Keep
+            && options.decimal_mode == DecimalMode::Keep)
+    {
         return Cow::Borrowed(s);
     }
 
@@ -150,7 +159,7 @@ pub fn normalize_amount_decimals(s: &str, mode: DecimalMode, places: usize) -> C
         format!(
             "{}{}{}",
             &caps[1],
-            normalize_decimals(&caps[2], mode, places),
+            normalize_number(&caps[2], options),
             &caps[3]
         )
     })

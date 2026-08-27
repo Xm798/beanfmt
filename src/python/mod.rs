@@ -4,7 +4,8 @@ use pyo3::types::PyBool;
 use std::str::FromStr;
 
 use crate::options::{
-    DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition,
+    AmountScope, DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator,
+    TimelessPosition,
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -46,6 +47,7 @@ fn build_options(
     thousands_separator: Option<String>,
     decimal_mode: Option<DecimalMode>,
     decimal_places: Option<usize>,
+    amount_scope: Option<AmountScope>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
@@ -65,6 +67,7 @@ fn build_options(
         thousands_separator: ts,
         decimal_mode: decimal_mode.unwrap_or(defaults.decimal_mode),
         decimal_places: decimal_places.unwrap_or(defaults.decimal_places),
+        amount_scope: amount_scope.unwrap_or(defaults.amount_scope),
         spaces_in_braces: spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
         sort: sort.unwrap_or(defaults.sort),
@@ -91,6 +94,7 @@ impl PyOptions {
         thousands_separator = None,
         decimal_mode = None,
         decimal_places = None,
+        amount_scope = None,
         spaces_in_braces = None,
         fixed_cjk_width = None,
         sort = None,
@@ -106,6 +110,7 @@ impl PyOptions {
         thousands_separator: Option<String>,
         decimal_mode: Option<String>,
         decimal_places: Option<usize>,
+        amount_scope: Option<String>,
         spaces_in_braces: Option<bool>,
         fixed_cjk_width: Option<bool>,
         sort: Option<&Bound<'_, PyAny>>,
@@ -116,6 +121,7 @@ impl PyOptions {
         let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
         let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
         let decimal_mode = decimal_mode.map(|s| parse_enum(&s)).transpose()?;
+        let amount_scope = amount_scope.map(|s| parse_enum(&s)).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
@@ -124,6 +130,7 @@ impl PyOptions {
             thousands_separator,
             decimal_mode,
             decimal_places,
+            amount_scope,
             spaces_in_braces,
             fixed_cjk_width,
             sort,
@@ -155,7 +162,7 @@ impl PyOptions {
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, inline_comment_column={}, \
              thousands_separator='{}', decimal_mode='{}', decimal_places={}, \
-             spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
+             amount_scope='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
              sort_timeless={}, sort_exclude={})",
             o.indent,
             o.currency_column,
@@ -164,6 +171,7 @@ impl PyOptions {
             ts,
             o.decimal_mode,
             o.decimal_places,
+            o.amount_scope,
             if o.spaces_in_braces { "True" } else { "False" },
             if o.fixed_cjk_width { "True" } else { "False" },
             sort,
@@ -224,6 +232,7 @@ fn resolve_options(
     thousands_separator: Option<String>,
     decimal_mode: Option<String>,
     decimal_places: Option<usize>,
+    amount_scope: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
@@ -243,6 +252,10 @@ fn resolve_options(
         Some(s) => parse_enum(&s)?,
         None => base.decimal_mode,
     };
+    let amount_scope = match amount_scope {
+        Some(s) => parse_enum(&s)?,
+        None => base.amount_scope,
+    };
 
     Ok(Options {
         indent: indent.unwrap_or(base.indent),
@@ -252,6 +265,7 @@ fn resolve_options(
         thousands_separator: ts,
         decimal_mode,
         decimal_places: decimal_places.unwrap_or(base.decimal_places),
+        amount_scope,
         spaces_in_braces: spaces_in_braces.unwrap_or(base.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(base.fixed_cjk_width),
         sort: sort.unwrap_or(base.sort),
@@ -299,6 +313,7 @@ fn load_project_config(dir: &str) -> PyResult<PyOptions> {
     thousands_separator = None,
     decimal_mode = None,
     decimal_places = None,
+    amount_scope = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -316,6 +331,7 @@ fn format(
     thousands_separator: Option<String>,
     decimal_mode: Option<String>,
     decimal_places: Option<usize>,
+    amount_scope: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -335,6 +351,7 @@ fn format(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        amount_scope,
         spaces_in_braces,
         fixed_cjk_width,
         sort,
@@ -357,6 +374,7 @@ fn format(
     thousands_separator = None,
     decimal_mode = None,
     decimal_places = None,
+    amount_scope = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -375,6 +393,7 @@ fn format_file(
     thousands_separator: Option<String>,
     decimal_mode: Option<String>,
     decimal_places: Option<usize>,
+    amount_scope: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -400,6 +419,7 @@ fn format_file(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        amount_scope,
         spaces_in_braces,
         fixed_cjk_width,
         sort,
@@ -425,6 +445,7 @@ fn format_file(
     thousands_separator = None,
     decimal_mode = None,
     decimal_places = None,
+    amount_scope = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -443,6 +464,7 @@ fn format_recursive(
     thousands_separator: Option<String>,
     decimal_mode: Option<String>,
     decimal_places: Option<usize>,
+    amount_scope: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -478,6 +500,7 @@ fn format_recursive(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        amount_scope,
         spaces_in_braces,
         fixed_cjk_width,
         sort,

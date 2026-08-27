@@ -9,6 +9,7 @@ declare module "*/wasm" {
     thousands: string,
     decimal_mode: string,
     decimal_places: number,
+    amount_scope: string,
     spaces_in_braces: boolean,
     fixed_cjk_width: boolean,
     sort: string,

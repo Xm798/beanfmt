@@ -1,5 +1,5 @@
 use beanfmt::normalize::*;
-use beanfmt::options::{DecimalMode, ThousandsSeparator};
+use beanfmt::options::{DecimalMode, Options, ThousandsSeparator};
 
 // normalize_indent tests
 
@@ -257,52 +257,83 @@ fn decimals_pad_custom_places() {
     assert_eq!(normalize_decimals("5.6", DecimalMode::Pad, 4), "5.6000");
 }
 
-// normalize_amount_decimals tests
+// normalize_amount tests
+
+fn amount_opts(mode: DecimalMode, thousands: ThousandsSeparator) -> Options {
+    Options {
+        decimal_mode: mode,
+        thousands_separator: thousands,
+        ..Options::default()
+    }
+}
 
 #[test]
 fn amount_decimals_in_cost() {
-    assert_eq!(
-        normalize_amount_decimals("{100.5 USD}", DecimalMode::Pad, 2),
-        "{100.50 USD}"
-    );
-    assert_eq!(
-        normalize_amount_decimals("{{100.5 USD}}", DecimalMode::Pad, 2),
-        "{{100.50 USD}}"
-    );
+    let opts = amount_opts(DecimalMode::Pad, ThousandsSeparator::Keep);
+    assert_eq!(normalize_amount("{100.5 USD}", &opts), "{100.50 USD}");
+    assert_eq!(normalize_amount("{{100.5 USD}}", &opts), "{{100.50 USD}}");
 }
 
 #[test]
 fn amount_decimals_in_cost_with_date() {
+    let opts = amount_opts(DecimalMode::Pad, ThousandsSeparator::Keep);
     assert_eq!(
-        normalize_amount_decimals("{100.5 USD, 2024-01-01}", DecimalMode::Pad, 2),
+        normalize_amount("{100.5 USD, 2024-01-01}", &opts),
         "{100.50 USD, 2024-01-01}"
     );
 }
 
 #[test]
 fn amount_decimals_leaves_bare_date_cost() {
-    assert_eq!(
-        normalize_amount_decimals("{2024-01-01}", DecimalMode::Pad, 2),
-        "{2024-01-01}"
-    );
+    let opts = amount_opts(DecimalMode::Pad, ThousandsSeparator::Keep);
+    assert_eq!(normalize_amount("{2024-01-01}", &opts), "{2024-01-01}");
 }
 
 #[test]
 fn amount_decimals_in_price() {
+    let opts = amount_opts(DecimalMode::Pad, ThousandsSeparator::Keep);
+    assert_eq!(normalize_amount("@ 7.1 CNY", &opts), "@ 7.10 CNY");
+
+    let opts = amount_opts(DecimalMode::Minimal, ThousandsSeparator::Keep);
+    assert_eq!(normalize_amount("@@ 7.100 CNY", &opts), "@@ 7.1 CNY");
+}
+
+#[test]
+fn amount_thousands_add_in_cost() {
+    let opts = amount_opts(DecimalMode::Keep, ThousandsSeparator::Add);
+    assert_eq!(normalize_amount("{1500 CNY}", &opts), "{1,500 CNY}");
     assert_eq!(
-        normalize_amount_decimals("@ 7.1 CNY", DecimalMode::Pad, 2),
-        "@ 7.10 CNY"
-    );
-    assert_eq!(
-        normalize_amount_decimals("@@ 7.100 CNY", DecimalMode::Minimal, 2),
-        "@@ 7.1 CNY"
+        normalize_amount("{{1500000 CNY}}", &opts),
+        "{{1,500,000 CNY}}"
     );
 }
 
 #[test]
-fn amount_decimals_keep_is_identity() {
-    assert_eq!(
-        normalize_amount_decimals("{100.5 USD}", DecimalMode::Keep, 2),
-        "{100.5 USD}"
-    );
+fn amount_thousands_add_in_price() {
+    let opts = amount_opts(DecimalMode::Keep, ThousandsSeparator::Add);
+    assert_eq!(normalize_amount("@ 1000.5 CNY", &opts), "@ 1,000.5 CNY");
+    assert_eq!(normalize_amount("@@ 12345 CNY", &opts), "@@ 12,345 CNY");
+}
+
+#[test]
+fn amount_thousands_remove_in_cost() {
+    let opts = amount_opts(DecimalMode::Keep, ThousandsSeparator::Remove);
+    assert_eq!(normalize_amount("{1,500 CNY}", &opts), "{1500 CNY}");
+}
+
+#[test]
+fn amount_thousands_and_decimals_compose() {
+    let opts = amount_opts(DecimalMode::Pad, ThousandsSeparator::Add);
+    assert_eq!(normalize_amount("{1500 CNY}", &opts), "{1,500.00 CNY}");
+    assert_eq!(normalize_amount("@ 1000.5 CNY", &opts), "@ 1,000.50 CNY");
+}
+
+#[test]
+fn amount_keep_defaults_are_identity() {
+    let opts = Options::default();
+    assert_eq!(normalize_amount("{100.5 USD}", &opts), "{100.5 USD}");
+    assert!(matches!(
+        normalize_amount("{100.5 USD}", &opts),
+        std::borrow::Cow::Borrowed(_)
+    ));
 }

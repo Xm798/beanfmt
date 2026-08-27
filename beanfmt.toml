@@ -27,17 +27,23 @@ inline_comment_column = 0
 #   "add"    — insert commas: 1000000 → 1,000,000
 #   "remove" — strip commas:  1,000,000 → 1000000
 #   "keep"   — leave as-is
+# Reaches the numbers selected by amount_scope.
 thousands = "keep"
 
 # Decimal place normalization for amounts: "keep", "minimal", or "pad" (default: "keep")
 #   "keep"    — leave as-is
 #   "minimal" — strip trailing zeros: 5.60 → 5.6, 5.00 → 5
 #   "pad"     — pad to decimal_places digits: 5.6 → 5.60, 5 → 5.00
-# Applies to posting amounts, costs, prices, and balance/price directives.
+# Reaches the numbers selected by amount_scope.
 decimal_mode = "keep"
 
 # Fractional digits to pad to when decimal_mode = "pad" (default: 2)
 decimal_places = 2
+
+# Which numbers thousands and decimal_mode reach: "all" or "amounts" (default: "all")
+#   "all"     — posting and balance amounts plus costs, price annotations and price directives
+#   "amounts" — posting and balance amounts only
+amount_scope = "all"
 
 # Add spaces inside cost braces: { 100 USD } vs {100 USD} (default: false)
 spaces_in_braces = false

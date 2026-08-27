@@ -34,13 +34,13 @@
       "type": "string",
       "default": "keep",
       "enum": ["add", "remove", "keep"],
-      "description": "Thousands separator handling. \"add\" inserts commas (1000000 → 1,000,000), \"remove\" strips commas (1,000,000 → 1000000), \"keep\" leaves as-is."
+      "description": "Thousands separator handling. \"add\" inserts commas (1000000 → 1,000,000), \"remove\" strips commas (1,000,000 → 1000000), \"keep\" leaves as-is. Reaches the numbers selected by amount_scope."
     },
     "decimal_mode": {
       "type": "string",
       "default": "keep",
       "enum": ["keep", "minimal", "pad"],
-      "description": "Decimal place normalization for amounts. \"keep\" leaves them as-is, \"minimal\" strips trailing zeros (5.60 \u2192 5.6, 5.00 \u2192 5), \"pad\" pads to decimal_places digits (5.6 \u2192 5.60)."
+      "description": "Decimal place normalization for amounts. \"keep\" leaves them as-is, \"minimal\" strips trailing zeros (5.60 \u2192 5.6, 5.00 \u2192 5), \"pad\" pads to decimal_places digits (5.6 \u2192 5.60). Reaches the numbers selected by amount_scope."
     },
     "decimal_places": {
       "type": "integer",
@@ -48,6 +48,12 @@
       "minimum": 0,
       "maximum": 20,
       "description": "Number of fractional digits to pad to when decimal_mode is \"pad\"."
+    },
+    "amount_scope": {
+      "type": "string",
+      "default": "all",
+      "enum": ["all", "amounts"],
+      "description": "Which numbers thousands and decimal_mode reach. \"all\" covers posting and balance amounts plus costs, price annotations and price directives; \"amounts\" covers posting and balance amounts only."
     },
     "spaces_in_braces": {
       "type": "boolean",

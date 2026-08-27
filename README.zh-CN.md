@@ -7,6 +7,7 @@
 - 货币和成本列对齐，支持 CJK 字符显示宽度计算
 - 千分位分隔符处理（添加、移除或保持不变）
 - 小数位处理（保持不变、去除末尾多余的零，或补齐到固定位数）
+- 数字规范化范围控制（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令，或仅 posting 与 `balance` 金额）
 - 成本花括号内空格控制
 - 按日期智能排序（升序/降序），支持 `time` 元数据日内排序、无时间条目位置控制、指令类型排序屏障
 - 递归格式化 `include` 引入的文件（支持 glob 模式）
@@ -53,6 +54,7 @@ inline_comment_column = 0   # 行内注释对齐列；0 表示不对齐
 thousands = "add"
 decimal_mode = "pad"    # "keep"、"minimal" 或 "pad"
 decimal_places = 2      # "pad" 模式补齐到的小数位数
+amount_scope = "all"    # "all" 或 "amounts"
 spaces_in_braces = true
 fixed_cjk_width = true
 sort = "asc"    # "asc"、"desc"、"off" 或 true/false
@@ -105,6 +107,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | 千分位分隔符：`add`（添加）、`remove`（移除）、`keep`（保持） |
 | `--decimal-mode <MODE>` | `keep` | 小数位处理：`keep`（保持）、`minimal`（去除末尾的零）、`pad`（补齐） |
 | `--decimal-places <N>` | `2` | `--decimal-mode pad` 时补齐到的小数位数 |
+| `--amount-scope <SCOPE>` | `all` | `--thousands` 与 `--decimal-mode` 的作用范围：`all`（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令）、`amounts`（仅 posting 与 `balance` 金额） |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | 开启 | CJK 双宽度字符对齐 |
 | `--sort [MODE]` / `--no-sort` | `off` | 按日期排序条目：`asc`（默认，单独使用 `--sort` 时）、`desc`、`off` |
@@ -138,7 +141,11 @@ opts = beanfmt.parse_config('indent = 2\ncurrency_column = 80\n')
 
 # 可复用的选项对象
 opts = beanfmt.Options(
-    currency_column=60, thousands_separator="add", decimal_mode="pad", decimal_places=2
+    currency_column=60,
+    thousands_separator="add",
+    decimal_mode="pad",
+    decimal_places=2,
+    amount_scope="all",
 )
 output = beanfmt.format(source, options=opts)
 
@@ -166,6 +173,7 @@ const output = format(
   "keep",      // thousands
   "keep",      // decimal_mode
   2,           // decimal_places
+  "all",       // amount_scope
   false,       // spaces_in_braces
   true,        // fixed_cjk_width
   "off",       // sort
@@ -197,6 +205,7 @@ const output = format(
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |
 | `beanfmt.decimalMode` | `"keep"` | 小数位处理：`"keep"`（保持）、`"minimal"`（去除末尾的零）、`"pad"`（补齐） |
 | `beanfmt.decimalPlaces` | `2` | `decimalMode` 为 `"pad"` 时补齐到的小数位数 |
+| `beanfmt.amountScope` | `"all"` | 数字规范化的作用范围：`"all"`（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令）、`"amounts"`（仅 posting 与 `balance` 金额） |
 | `beanfmt.spacesInBraces` | `false` | 花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | CJK 双宽度字符对齐 |
 | `beanfmt.sort` | `"off"` | 按日期排序：`"asc"`、`"desc"`、`"off"` |

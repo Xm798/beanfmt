@@ -1,5 +1,7 @@
 use beanfmt::format;
-use beanfmt::options::{DecimalMode, Options, SortOrder, ThousandsSeparator, TimelessPosition};
+use beanfmt::options::{
+    AmountScope, DecimalMode, Options, SortOrder, ThousandsSeparator, TimelessPosition,
+};
 
 fn default_opts() -> Options {
     Options::default()
@@ -663,4 +665,64 @@ fn decimal_minimal_leaves_arithmetic_expressions() {
     let input = "2024-01-01 * \"Split\"\n  Expenses:Food  (100.00 / 3) USD\n";
     let result = format(input, &opts);
     assert!(result.contains("(100.00 / 3) USD"), "{result}");
+}
+
+const SCOPE_SOURCE: &str = concat!(
+    "2024-01-01 * \"Buy\"\n",
+    "  Assets:Stock  1000.5 USD {1500 CNY} @ 1000.5 CNY\n",
+    "2024-01-02 balance Assets:Bank  1000.5 USD\n",
+    "2024-01-03 price AAPL  1000.5 USD\n",
+);
+
+fn scope_opts(scope: AmountScope) -> Options {
+    Options {
+        thousands_separator: ThousandsSeparator::Add,
+        decimal_mode: DecimalMode::Pad,
+        amount_scope: scope,
+        ..default_opts()
+    }
+}
+
+#[test]
+fn amount_scope_all_normalizes_cost_and_prices() {
+    let result = format(SCOPE_SOURCE, &scope_opts(AmountScope::All));
+    assert_eq!(
+        result,
+        concat!(
+            "2024-01-01 * \"Buy\"\n",
+            "  Assets:Stock                                              1,000.50 USD  {1,500.00 CNY} @ 1,000.50 CNY\n",
+            "\n",
+            "2024-01-02 balance Assets:Bank                              1,000.50 USD\n",
+            "\n",
+            "2024-01-03 price AAPL                                       1,000.50 USD\n",
+        )
+    );
+}
+
+#[test]
+fn amount_scope_amounts_leaves_cost_and_prices() {
+    let result = format(SCOPE_SOURCE, &scope_opts(AmountScope::Amounts));
+    assert_eq!(
+        result,
+        concat!(
+            "2024-01-01 * \"Buy\"\n",
+            "  Assets:Stock                                              1,000.50 USD  {1500 CNY} @ 1000.5 CNY\n",
+            "\n",
+            "2024-01-02 balance Assets:Bank                              1,000.50 USD\n",
+            "\n",
+            "2024-01-03 price AAPL                                         1000.5 USD\n",
+        )
+    );
+}
+
+#[test]
+fn amount_scope_amounts_keeps_brace_spacing_and_sign_compaction() {
+    let opts = Options {
+        spaces_in_braces: true,
+        ..scope_opts(AmountScope::Amounts)
+    };
+    let input = "2024-01-01 * \"Buy\"\n  Assets:Stock  10 AAPL {1500 CNY} @ - 1000.5 CNY\n";
+    let result = format(input, &opts);
+    assert!(result.contains("{ 1500 CNY }"), "{result}");
+    assert!(result.contains("@ -1000.5 CNY"), "{result}");
 }

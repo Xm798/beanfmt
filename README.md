@@ -9,6 +9,7 @@ A fast [beancount](https://beancount.github.io/) file formatter with CJK double-
 - Column-aligned currencies and costs with CJK-aware display width
 - Thousands separator normalization (add, remove, or keep)
 - Decimal place normalization (keep, strip trailing zeros, or pad to a fixed width)
+- Scoping of number normalization: posting and `balance` amounts plus costs, price annotations and `price` directives, or posting and `balance` amounts only
 - Brace spacing control for cost annotations
 - Smart date-based sorting (asc/desc) with `time` metadata intra-day ordering, timeless entry positioning, and directive-type sort barriers
 - Recursive formatting of `include`d files (with glob support)
@@ -55,6 +56,7 @@ inline_comment_column = 0   # column to align inline comments to; 0 disables
 thousands = "add"
 decimal_mode = "pad"    # "keep", "minimal", or "pad"
 decimal_places = 2      # fraction width used by "pad"
+amount_scope = "all"    # "all" or "amounts"
 spaces_in_braces = true
 fixed_cjk_width = true
 sort = "asc"    # "asc", "desc", "off", or true/false
@@ -107,6 +109,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
 | `--decimal-mode <MODE>` | `keep` | Decimal places: `keep`, `minimal` (strip trailing zeros), or `pad` |
 | `--decimal-places <N>` | `2` | Fraction width to pad to when `--decimal-mode pad` |
+| `--amount-scope <SCOPE>` | `all` | Which numbers `--thousands` and `--decimal-mode` reach: `all` (posting and `balance` amounts plus costs, price annotations and `price` directives), or `amounts` (posting and `balance` amounts only) |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
 | `--sort [MODE]` / `--no-sort` | `off` | Sort entries by date: `asc` (default if bare `--sort`), `desc`, `off` |
@@ -142,7 +145,11 @@ opts = beanfmt.parse_config('indent = 2\ncurrency_column = 80\n')
 
 # Reusable options
 opts = beanfmt.Options(
-    currency_column=60, thousands_separator="add", decimal_mode="pad", decimal_places=2
+    currency_column=60,
+    thousands_separator="add",
+    decimal_mode="pad",
+    decimal_places=2,
+    amount_scope="all",
 )
 output = beanfmt.format(source, options=opts)
 
@@ -170,6 +177,7 @@ const output = format(
   "keep",      // thousands
   "keep",      // decimal_mode
   2,           // decimal_places
+  "all",       // amount_scope
   false,       // spaces_in_braces
   true,        // fixed_cjk_width
   "off",       // sort
@@ -201,6 +209,7 @@ Available settings:
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
 | `beanfmt.decimalMode` | `"keep"` | Decimal places: `"keep"`, `"minimal"`, or `"pad"` |
 | `beanfmt.decimalPlaces` | `2` | Fraction width to pad to when `decimalMode` is `"pad"` |
+| `beanfmt.amountScope` | `"all"` | Which numbers get normalized: `"all"` (posting and `balance` amounts plus costs, price annotations and `price` directives), or `"amounts"` (posting and `balance` amounts only) |
 | `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |
 | `beanfmt.sort` | `"off"` | Sort entries by date: `"asc"`, `"desc"`, `"off"` |

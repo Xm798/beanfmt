@@ -14,10 +14,10 @@ pub mod sort;
 use align::{align_balance, align_close, align_open, align_posting, align_price};
 use line::{Line, parse_line};
 use normalize::{
-    normalize_amount_decimals, normalize_braces, normalize_comment_aligned, normalize_indent,
+    normalize_amount, normalize_braces, normalize_comment_aligned, normalize_indent,
     normalize_number,
 };
-use options::{DecimalMode, Options, SortOrder, SortableDirective};
+use options::{AmountScope, Options, SortOrder, SortableDirective};
 use std::borrow::Cow;
 
 pub fn format(input: &str, options: &Options) -> String {
@@ -43,6 +43,7 @@ pub fn format(input: &str, options: &Options) -> String {
     let comment_semi_widths = comment_block_semi_widths(&raw_lines);
     let mut output_lines: Vec<String> = Vec::new();
     let mut meta_depth: usize = 1;
+    let indent_str = options.indent_str();
 
     for (i, raw_line) in raw_lines.iter().copied().enumerate() {
         let parsed = parse_line(raw_line);
@@ -67,21 +68,18 @@ pub fn format(input: &str, options: &Options) -> String {
             } => {
                 let number = number.map(|n| normalize_number(n, options));
                 let cost = cost.map(|c| {
-                    let c =
-                        normalize_amount_decimals(c, options.decimal_mode, options.decimal_places);
-                    normalize_braces(&c, options.spaces_in_braces)
+                    normalize_braces(&normalize_amount(c, options), options.spaces_in_braces)
                 });
                 let price = price.map(|p| {
-                    let p = p.replace("- ", "-");
-                    match options.decimal_mode {
-                        DecimalMode::Keep => p,
-                        mode => {
-                            normalize_amount_decimals(&p, mode, options.decimal_places).into_owned()
-                        }
+                    let p = normalize_amount(p, options);
+                    if p.contains("- ") {
+                        Cow::Owned(p.replace("- ", "-"))
+                    } else {
+                        p
                     }
                 });
                 align_posting(
-                    &options.indent_str(),
+                    &indent_str,
                     account,
                     number.as_deref(),
                     currency,
@@ -119,7 +117,11 @@ pub fn format(input: &str, options: &Options) -> String {
                 currency,
                 comment,
             } => {
-                let number = normalize_number(number, options);
+                let number = if options.amount_scope == AmountScope::All {
+                    normalize_number(number, options)
+                } else {
+                    Cow::Borrowed(number)
+                };
                 align_price(date, commodity, &number, currency, comment, options)
             }
             Line::MetaItem {
@@ -128,7 +130,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 value,
             } => {
                 let value = normalize_braces(value, options.spaces_in_braces);
-                format!("{}{key}: {value}", options.indent_str().repeat(meta_depth))
+                format!("{}{key}: {value}", " ".repeat(options.indent * meta_depth))
             }
             Line::Comment { .. } => normalize_comment_aligned(raw_line, comment_semi_widths[i]),
             Line::DateDirective {
