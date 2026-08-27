@@ -1,6 +1,7 @@
+use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
+use crate::options::{Options, SortableDirective, ThousandsSeparator};
 
 fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
     match s.to_ascii_lowercase().as_str() {
@@ -13,11 +14,7 @@ fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
     }
 }
 
-fn parse_sort(s: &str) -> Result<SortOrder, JsError> {
-    s.parse().map_err(|msg: String| JsError::new(&msg))
-}
-
-fn parse_timeless(s: &str) -> Result<TimelessPosition, JsError> {
+fn parse_enum<T: FromStr<Err = String>>(s: &str) -> Result<T, JsError> {
     s.parse().map_err(|msg: String| JsError::new(&msg))
 }
 
@@ -31,6 +28,8 @@ pub fn format(
     cost_column: usize,
     inline_comment_column: usize,
     thousands: &str,
+    decimal_mode: &str,
+    decimal_places: usize,
     spaces_in_braces: bool,
     fixed_cjk_width: bool,
     sort: &str,
@@ -40,9 +39,8 @@ pub fn format(
     let sort_exclude = match sort_exclude {
         Some(items) => items
             .iter()
-            .map(|s| s.parse::<SortableDirective>())
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(|msg| JsError::new(&msg))?,
+            .map(|s| parse_enum::<SortableDirective>(s))
+            .collect::<Result<Vec<_>, _>>()?,
         None => Vec::new(),
     };
     let options = Options {
@@ -51,10 +49,12 @@ pub fn format(
         cost_column,
         inline_comment_column,
         thousands_separator: parse_thousands(thousands)?,
+        decimal_mode: parse_enum(decimal_mode)?,
+        decimal_places,
         spaces_in_braces,
         fixed_cjk_width,
-        sort: parse_sort(sort)?,
-        sort_timeless: parse_timeless(sort_timeless)?,
+        sort: parse_enum(sort)?,
+        sort_timeless: parse_enum(sort_timeless)?,
         sort_exclude,
     };
 

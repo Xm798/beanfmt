@@ -14,9 +14,10 @@ pub mod sort;
 use align::{align_balance, align_close, align_open, align_posting, align_price};
 use line::{Line, parse_line};
 use normalize::{
-    normalize_braces, normalize_comment_aligned, normalize_indent, normalize_thousands,
+    normalize_amount_decimals, normalize_braces, normalize_comment_aligned, normalize_indent,
+    normalize_number,
 };
-use options::{Options, SortOrder, SortableDirective};
+use options::{DecimalMode, Options, SortOrder, SortableDirective};
 use std::borrow::Cow;
 
 pub fn format(input: &str, options: &Options) -> String {
@@ -64,9 +65,21 @@ pub fn format(input: &str, options: &Options) -> String {
                 price,
                 comment,
             } => {
-                let number = number.map(|n| normalize_thousands(n, &options.thousands_separator));
-                let cost = cost.map(|c| normalize_braces(c, options.spaces_in_braces));
-                let price = price.map(|p| p.replace("- ", "-"));
+                let number = number.map(|n| normalize_number(n, options));
+                let cost = cost.map(|c| {
+                    let c =
+                        normalize_amount_decimals(c, options.decimal_mode, options.decimal_places);
+                    normalize_braces(&c, options.spaces_in_braces)
+                });
+                let price = price.map(|p| {
+                    let p = p.replace("- ", "-");
+                    match options.decimal_mode {
+                        DecimalMode::Keep => p,
+                        mode => {
+                            normalize_amount_decimals(&p, mode, options.decimal_places).into_owned()
+                        }
+                    }
+                });
                 align_posting(
                     &options.indent_str(),
                     account,
@@ -85,7 +98,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 currency,
                 comment,
             } => {
-                let number = normalize_thousands(number, &options.thousands_separator);
+                let number = normalize_number(number, options);
                 align_balance(date, account, &number, currency, comment, options)
             }
             Line::Open {
@@ -106,7 +119,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 currency,
                 comment,
             } => {
-                let number = normalize_thousands(number, &options.thousands_separator);
+                let number = normalize_number(number, options);
                 align_price(date, commodity, &number, currency, comment, options)
             }
             Line::MetaItem {

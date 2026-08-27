@@ -9,6 +9,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 - **Column alignment** — automatically aligns currencies and cost annotations
 - **CJK-aware** — correctly handles double-width CJK characters for alignment
 - **Thousands separator** — add, remove, or keep commas in numbers
+- **Decimal places** — keep, strip trailing zeros, or pad to a fixed width
 - **Brace spacing** — control spaces inside cost braces `{ ... }`
 - **Inline comment alignment** — align trailing `;` comments to a column
 - **Smart date sorting** — sort entries by date (asc/desc) with `time` metadata intra-day ordering, timeless-entry positioning, and directive-type sort barriers
@@ -35,6 +36,8 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.costColumn` | `75` | Column to align costs/prices to |
 | `beanfmt.inlineCommentColumn` | `0` | Column to align inline comments (`;`) to; `0` disables alignment |
 | `beanfmt.thousandsSeparator` | `"keep"` | Thousands separator: `"add"`, `"remove"`, or `"keep"` |
+| `beanfmt.decimalMode` | `"keep"` | Decimal places: `"keep"`, `"minimal"` (strip trailing zeros), or `"pad"` |
+| `beanfmt.decimalPlaces` | `2` | Fraction width to pad to when `decimalMode` is `"pad"` |
 | `beanfmt.spacesInBraces` | `false` | Add spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | Treat CJK characters as double-width for alignment |
 | `beanfmt.sort` | `"off"` | Sort entries by date: `"off"`, `"asc"`, or `"desc"` |
@@ -54,6 +57,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 - **列对齐** — 自动对齐货币和成本标注
 - **CJK 感知** — 正确处理中日韩双宽度字符的对齐
 - **千位分隔符** — 添加、移除或保留数字中的逗号
+- **小数位** — 保持不变、去除末尾多余的零，或补齐到固定位数
 - **花括号空格** — 控制成本花括号内的空格 `{ ... }`
 - **行内注释对齐** — 将行尾 `;` 注释对齐到指定列
 - **智能日期排序** — 按日期排序条目（升序/降序），支持 `time` 元数据的日内排序、无时间条目定位以及按指令类型设置排序屏障
@@ -80,6 +84,8 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.costColumn` | `75` | 成本/价格对齐列 |
 | `beanfmt.inlineCommentColumn` | `0` | 行内注释（`;`）对齐列；`0` 表示不对齐 |
 | `beanfmt.thousandsSeparator` | `"keep"` | 千位分隔符处理：`"add"` 添加、`"remove"` 移除、`"keep"` 保持 |
+| `beanfmt.decimalMode` | `"keep"` | 小数位处理：`"keep"` 保持、`"minimal"` 去除末尾的零、`"pad"` 补齐 |
+| `beanfmt.decimalPlaces` | `2` | `decimalMode` 为 `"pad"` 时补齐到的小数位数 |
 | `beanfmt.spacesInBraces` | `false` | 成本花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | 将 CJK 字符视为双宽度进行对齐 |
 | `beanfmt.sort` | `"off"` | 按日期排序条目：`"off"`、`"asc"`、`"desc"` |

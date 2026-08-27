@@ -1,5 +1,5 @@
 use beanfmt::config::FileConfig;
-use beanfmt::options::{SortOrder, SortableDirective, TimelessPosition};
+use beanfmt::options::{DecimalMode, SortOrder, SortableDirective, TimelessPosition};
 use beanfmt::recursive::format_recursive;
 use clap::{ArgAction, Parser};
 use std::fs;
@@ -33,6 +33,14 @@ struct Cli {
     /// Thousands separator handling (add, remove, keep)
     #[arg(long)]
     thousands: Option<String>,
+
+    /// Decimal place normalization (keep, minimal, pad)
+    #[arg(long, value_enum)]
+    decimal_mode: Option<DecimalMode>,
+
+    /// Number of fractional digits to pad to when --decimal-mode is pad
+    #[arg(long)]
+    decimal_places: Option<usize>,
 
     /// Add spaces inside cost braces
     #[arg(long, action = ArgAction::SetTrue, overrides_with = "no_spaces_in_braces")]
@@ -109,6 +117,8 @@ impl Cli {
             cost_column: self.cost_column,
             inline_comment_column: self.inline_comment_column,
             thousands: self.thousands.clone(),
+            decimal_mode: self.decimal_mode,
+            decimal_places: self.decimal_places,
             spaces_in_braces,
             fixed_cjk_width,
             sort,

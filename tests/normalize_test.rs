@@ -1,5 +1,5 @@
 use beanfmt::normalize::*;
-use beanfmt::options::ThousandsSeparator;
+use beanfmt::options::{DecimalMode, ThousandsSeparator};
 
 // normalize_indent tests
 
@@ -189,5 +189,120 @@ fn thousands_add_existing_wrong_commas() {
     assert_eq!(
         normalize_thousands("12,34,567.89", &ThousandsSeparator::Add),
         "1,234,567.89"
+    );
+}
+
+// normalize_decimals tests
+
+#[test]
+fn decimals_keep_unchanged() {
+    assert_eq!(normalize_decimals("5.60", DecimalMode::Keep, 2), "5.60");
+    assert_eq!(normalize_decimals("5", DecimalMode::Keep, 2), "5");
+    assert_eq!(normalize_decimals("- 5.6", DecimalMode::Keep, 2), "- 5.6");
+}
+
+#[test]
+fn decimals_minimal_strips_trailing_zeros() {
+    let cases = [
+        ("5.60", "5.6"),
+        ("5.00", "5"),
+        ("5", "5"),
+        ("5.6", "5.6"),
+        ("-0.50", "-0.5"),
+        ("-100.000", "-100"),
+        ("- 5.60", "-5.6"),
+        ("1,234.50", "1,234.5"),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(
+            normalize_decimals(input, DecimalMode::Minimal, 2),
+            expected,
+            "input: {input}"
+        );
+    }
+}
+
+#[test]
+fn decimals_pad_shorter_fraction() {
+    let cases = [
+        ("5.6", "5.60"),
+        ("5", "5.00"),
+        ("-0.5", "-0.50"),
+        ("- 5.6", "-5.60"),
+        ("1,234.5", "1,234.50"),
+    ];
+    for (input, expected) in cases {
+        assert_eq!(
+            normalize_decimals(input, DecimalMode::Pad, 2),
+            expected,
+            "input: {input}"
+        );
+    }
+}
+
+#[test]
+fn decimals_pad_leaves_longer_fraction() {
+    assert_eq!(normalize_decimals("5.123", DecimalMode::Pad, 2), "5.123");
+    assert_eq!(normalize_decimals("5.12", DecimalMode::Pad, 2), "5.12");
+}
+
+#[test]
+fn decimals_pad_zero_places_leaves_integer() {
+    assert_eq!(normalize_decimals("5", DecimalMode::Pad, 0), "5");
+    assert_eq!(normalize_decimals("5.6", DecimalMode::Pad, 0), "5.6");
+}
+
+#[test]
+fn decimals_pad_custom_places() {
+    assert_eq!(normalize_decimals("5.6", DecimalMode::Pad, 4), "5.6000");
+}
+
+// normalize_amount_decimals tests
+
+#[test]
+fn amount_decimals_in_cost() {
+    assert_eq!(
+        normalize_amount_decimals("{100.5 USD}", DecimalMode::Pad, 2),
+        "{100.50 USD}"
+    );
+    assert_eq!(
+        normalize_amount_decimals("{{100.5 USD}}", DecimalMode::Pad, 2),
+        "{{100.50 USD}}"
+    );
+}
+
+#[test]
+fn amount_decimals_in_cost_with_date() {
+    assert_eq!(
+        normalize_amount_decimals("{100.5 USD, 2024-01-01}", DecimalMode::Pad, 2),
+        "{100.50 USD, 2024-01-01}"
+    );
+}
+
+#[test]
+fn amount_decimals_leaves_bare_date_cost() {
+    assert_eq!(
+        normalize_amount_decimals("{2024-01-01}", DecimalMode::Pad, 2),
+        "{2024-01-01}"
+    );
+}
+
+#[test]
+fn amount_decimals_in_price() {
+    assert_eq!(
+        normalize_amount_decimals("@ 7.1 CNY", DecimalMode::Pad, 2),
+        "@ 7.10 CNY"
+    );
+    assert_eq!(
+        normalize_amount_decimals("@@ 7.100 CNY", DecimalMode::Minimal, 2),
+        "@@ 7.1 CNY"
+    );
+}
+
+#[test]
+fn amount_decimals_keep_is_identity() {
+    assert_eq!(
+        normalize_amount_decimals("{100.5 USD}", DecimalMode::Keep, 2),
+        "{100.5 USD}"
     );
 }

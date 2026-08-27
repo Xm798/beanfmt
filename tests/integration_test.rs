@@ -1,5 +1,5 @@
 use beanfmt::format;
-use beanfmt::options::{Options, SortOrder, ThousandsSeparator, TimelessPosition};
+use beanfmt::options::{DecimalMode, Options, SortOrder, ThousandsSeparator, TimelessPosition};
 
 fn default_opts() -> Options {
     Options::default()
@@ -575,4 +575,92 @@ fn inline_comment_column_disabled_by_default() {
     let result = format(input, &default_opts());
     // No alignment: comment kept one space after the amount, not pushed to a column.
     assert!(result.contains("USD ;checked"), "got: {:?}", result);
+}
+
+#[test]
+fn decimal_pad_posting_cost_and_price() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Pad,
+        ..default_opts()
+    };
+    let input = "2024-01-01 * \"Buy\"\n  Assets:Stock  10 AAPL {100.5 USD, 2024-01-01} @ 7.1 CNY\n";
+    let result = format(input, &opts);
+    assert!(result.contains("10.00 AAPL"), "{result}");
+    assert!(result.contains("{100.50 USD, 2024-01-01}"), "{result}");
+    assert!(result.contains("@ 7.10 CNY"), "{result}");
+}
+
+#[test]
+fn decimal_minimal_posting_cost_and_price() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Minimal,
+        ..default_opts()
+    };
+    let input = "2024-01-01 * \"Buy\"\n  Assets:Stock  10.00 AAPL {100.500 USD} @@ 7.10 CNY\n";
+    let result = format(input, &opts);
+    assert!(result.contains(" 10 AAPL"), "{result}");
+    assert!(result.contains("{100.5 USD}"), "{result}");
+    assert!(result.contains("@@ 7.1 CNY"), "{result}");
+}
+
+#[test]
+fn decimal_pad_balance_and_price_directives() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Pad,
+        ..default_opts()
+    };
+    let input = "2024-01-01 balance Assets:Bank  1000 USD\n2024-01-01 price AAPL  185.5 USD\n";
+    let result = format(input, &opts);
+    assert!(result.contains("1000.00 USD"), "{result}");
+    assert!(result.contains("185.50 USD"), "{result}");
+}
+
+#[test]
+fn decimal_leaves_dates_metadata_and_comments_alone() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Pad,
+        ..default_opts()
+    };
+    let input = concat!(
+        "2024-01-01 * \"Shop\"\n",
+        "  time: \"09:30\"\n",
+        "  ratio: 1.5\n",
+        "  Expenses:Food  10 USD  ; costs 2.5 each\n",
+    );
+    let result = format(input, &opts);
+    assert!(result.contains("2024-01-01 * \"Shop\""), "{result}");
+    assert!(result.contains("time: \"09:30\""), "{result}");
+    assert!(result.contains("ratio: 1.5"), "{result}");
+    assert!(result.contains("; costs 2.5 each"), "{result}");
+    assert!(result.contains("10.00 USD"), "{result}");
+}
+
+#[test]
+fn decimal_composes_with_thousands_add() {
+    let opts = Options {
+        thousands_separator: ThousandsSeparator::Add,
+        decimal_mode: DecimalMode::Pad,
+        ..default_opts()
+    };
+    let input = "2024-01-01 balance Assets:Bank  12345.5 USD\n";
+    let result = format(input, &opts);
+    assert!(result.contains("12,345.50 USD"), "{result}");
+}
+
+#[test]
+fn decimal_keep_is_default() {
+    let input = "2024-01-01 balance Assets:Bank  1000.5 USD\n";
+    let result = format(input, &default_opts());
+    assert!(result.contains("1000.5 USD"), "{result}");
+}
+
+#[test]
+fn decimal_minimal_leaves_arithmetic_expressions() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Minimal,
+        ..default_opts()
+    };
+    let input = "2024-01-01 * \"Split\"\n  Expenses:Food  (100.00 / 3) USD\n";
+    let result = format(input, &opts);
+    assert!(result.contains("(100.00 / 3) USD"), "{result}");
 }

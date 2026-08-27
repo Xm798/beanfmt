@@ -29,6 +29,16 @@ inline_comment_column = 0
 #   "keep"   — leave as-is
 thousands = "keep"
 
+# Decimal place normalization for amounts: "keep", "minimal", or "pad" (default: "keep")
+#   "keep"    — leave as-is
+#   "minimal" — strip trailing zeros: 5.60 → 5.6, 5.00 → 5
+#   "pad"     — pad to decimal_places digits: 5.6 → 5.60, 5 → 5.00
+# Applies to posting amounts, costs, prices, and balance/price directives.
+decimal_mode = "keep"
+
+# Fractional digits to pad to when decimal_mode = "pad" (default: 2)
+decimal_places = 2
+
 # Add spaces inside cost braces: { 100 USD } vs {100 USD} (default: false)
 spaces_in_braces = false
 

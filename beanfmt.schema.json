@@ -36,6 +36,19 @@
       "enum": ["add", "remove", "keep"],
       "description": "Thousands separator handling. \"add\" inserts commas (1000000 → 1,000,000), \"remove\" strips commas (1,000,000 → 1000000), \"keep\" leaves as-is."
     },
+    "decimal_mode": {
+      "type": "string",
+      "default": "keep",
+      "enum": ["keep", "minimal", "pad"],
+      "description": "Decimal place normalization for amounts. \"keep\" leaves them as-is, \"minimal\" strips trailing zeros (5.60 \u2192 5.6, 5.00 \u2192 5), \"pad\" pads to decimal_places digits (5.6 \u2192 5.60)."
+    },
+    "decimal_places": {
+      "type": "integer",
+      "default": 2,
+      "minimum": 0,
+      "maximum": 20,
+      "description": "Number of fractional digits to pad to when decimal_mode is \"pad\"."
+    },
     "spaces_in_braces": {
       "type": "boolean",
       "default": false,

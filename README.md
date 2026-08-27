@@ -8,6 +8,7 @@ A fast [beancount](https://beancount.github.io/) file formatter with CJK double-
 
 - Column-aligned currencies and costs with CJK-aware display width
 - Thousands separator normalization (add, remove, or keep)
+- Decimal place normalization (keep, strip trailing zeros, or pad to a fixed width)
 - Brace spacing control for cost annotations
 - Smart date-based sorting (asc/desc) with `time` metadata intra-day ordering, timeless entry positioning, and directive-type sort barriers
 - Recursive formatting of `include`d files (with glob support)
@@ -52,6 +53,8 @@ currency_column = 60
 cost_column = 65
 inline_comment_column = 0   # column to align inline comments to; 0 disables
 thousands = "add"
+decimal_mode = "pad"    # "keep", "minimal", or "pad"
+decimal_places = 2      # fraction width used by "pad"
 spaces_in_braces = true
 fixed_cjk_width = true
 sort = "asc"    # "asc", "desc", "off", or true/false
@@ -102,6 +105,8 @@ beanfmt --thousands add --sort ledger.beancount
 | `--cost-column <N>` | `75` | Target column for cost/price alignment |
 | `--inline-comment-column <N>` | `0` | Target column to align inline comments (`;`) to; `0` disables alignment |
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
+| `--decimal-mode <MODE>` | `keep` | Decimal places: `keep`, `minimal` (strip trailing zeros), or `pad` |
+| `--decimal-places <N>` | `2` | Fraction width to pad to when `--decimal-mode pad` |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
 | `--sort [MODE]` / `--no-sort` | `off` | Sort entries by date: `asc` (default if bare `--sort`), `desc`, `off` |
@@ -136,7 +141,9 @@ opts = beanfmt.load_project_config("/path/to/project/")
 opts = beanfmt.parse_config('indent = 2\ncurrency_column = 80\n')
 
 # Reusable options
-opts = beanfmt.Options(currency_column=60, thousands_separator="add")
+opts = beanfmt.Options(
+    currency_column=60, thousands_separator="add", decimal_mode="pad", decimal_places=2
+)
 output = beanfmt.format(source, options=opts)
 
 # Recursive formatting — returns list of (path, content) tuples
@@ -154,7 +161,21 @@ import { format, format_default } from "beanfmt";
 const output = format_default(source);
 
 // Format with full options
-const output = format(source, 4, 70, 75, "keep", false, true, "off", "begin", undefined);
+const output = format(
+  source,
+  2,           // indent
+  70,          // currency_column
+  75,          // cost_column
+  0,           // inline_comment_column
+  "keep",      // thousands
+  "keep",      // decimal_mode
+  2,           // decimal_places
+  false,       // spaces_in_braces
+  true,        // fixed_cjk_width
+  "off",       // sort
+  "keep",      // sort_timeless
+  undefined,   // sort_exclude
+);
 ```
 
 ### VSCode
@@ -178,6 +199,8 @@ Available settings:
 | `beanfmt.currencyColumn` | `70` | Currency alignment column |
 | `beanfmt.costColumn` | `75` | Cost/price alignment column |
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
+| `beanfmt.decimalMode` | `"keep"` | Decimal places: `"keep"`, `"minimal"`, or `"pad"` |
+| `beanfmt.decimalPlaces` | `2` | Fraction width to pad to when `decimalMode` is `"pad"` |
 | `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |
 | `beanfmt.sort` | `"off"` | Sort entries by date: `"asc"`, `"desc"`, `"off"` |

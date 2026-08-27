@@ -26,6 +26,8 @@ interface BeanfmtConfig {
   cost_column?: number;
   inline_comment_column?: number;
   thousands?: string;
+  decimal_mode?: string;
+  decimal_places?: number;
   spaces_in_braces?: boolean;
   fixed_cjk_width?: boolean;
   sort?: string | boolean;
@@ -42,6 +44,10 @@ function validateConfig(raw: Record<string, unknown>): BeanfmtConfig {
   if (typeof raw.inline_comment_column === "number")
     config.inline_comment_column = raw.inline_comment_column;
   if (typeof raw.thousands === "string") config.thousands = raw.thousands;
+  if (typeof raw.decimal_mode === "string")
+    config.decimal_mode = raw.decimal_mode;
+  if (typeof raw.decimal_places === "number")
+    config.decimal_places = raw.decimal_places;
   if (typeof raw.spaces_in_braces === "boolean")
     config.spaces_in_braces = raw.spaces_in_braces;
   if (typeof raw.fixed_cjk_width === "boolean")
@@ -148,7 +154,7 @@ export async function activate(
               ? "off"
               : (pc.sort as string | undefined);
 
-        const indent = clamp(resolve("indent", pc.indent, 4), 1, 20);
+        const indent = clamp(resolve("indent", pc.indent, 2), 1, 20);
         const currencyColumn = clamp(
           resolve("currencyColumn", pc.currency_column, 70),
           1,
@@ -168,6 +174,12 @@ export async function activate(
           "thousandsSeparator",
           pc.thousands,
           "keep",
+        );
+        const decimalMode = resolve("decimalMode", pc.decimal_mode, "keep");
+        const decimalPlaces = clamp(
+          resolve("decimalPlaces", pc.decimal_places, 2),
+          0,
+          20,
         );
         const spacesInBraces = resolve(
           "spacesInBraces",
@@ -196,6 +208,8 @@ export async function activate(
             costColumn,
             inlineCommentColumn,
             thousandsSeparator,
+            decimalMode,
+            decimalPlaces,
             spacesInBraces,
             fixedCJKWidth,
             sort,

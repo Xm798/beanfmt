@@ -1,8 +1,11 @@
 use pyo3::exceptions::{PyOSError, PyValueError};
 use pyo3::prelude::*;
 use pyo3::types::PyBool;
+use std::str::FromStr;
 
-use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
+use crate::options::{
+    DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -17,24 +20,21 @@ fn parse_thousands(s: &str) -> PyResult<ThousandsSeparator> {
     }
 }
 
+fn parse_enum<T: FromStr<Err = String>>(s: &str) -> PyResult<T> {
+    s.parse().map_err(PyValueError::new_err)
+}
+
 fn parse_sort(obj: &Bound<'_, PyAny>) -> PyResult<SortOrder> {
     if obj.is_instance_of::<PyBool>() {
         let v: bool = obj.extract()?;
         return Ok(if v { SortOrder::Asc } else { SortOrder::Off });
     }
     let s: String = obj.extract()?;
-    s.parse().map_err(|msg: String| PyValueError::new_err(msg))
-}
-
-fn parse_timeless(s: &str) -> PyResult<TimelessPosition> {
-    s.parse().map_err(|msg: String| PyValueError::new_err(msg))
+    parse_enum(&s)
 }
 
 fn parse_sort_exclude(items: Vec<String>) -> PyResult<Vec<SortableDirective>> {
-    items
-        .iter()
-        .map(|s| s.parse().map_err(|msg: String| PyValueError::new_err(msg)))
-        .collect()
+    items.iter().map(|s| parse_enum(s)).collect()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -44,6 +44,8 @@ fn build_options(
     cost_column: Option<usize>,
     inline_comment_column: Option<usize>,
     thousands_separator: Option<String>,
+    decimal_mode: Option<DecimalMode>,
+    decimal_places: Option<usize>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
@@ -61,6 +63,8 @@ fn build_options(
         cost_column: cost_column.unwrap_or(defaults.cost_column),
         inline_comment_column: inline_comment_column.unwrap_or(defaults.inline_comment_column),
         thousands_separator: ts,
+        decimal_mode: decimal_mode.unwrap_or(defaults.decimal_mode),
+        decimal_places: decimal_places.unwrap_or(defaults.decimal_places),
         spaces_in_braces: spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
         sort: sort.unwrap_or(defaults.sort),
@@ -85,6 +89,8 @@ impl PyOptions {
         cost_column = None,
         inline_comment_column = None,
         thousands_separator = None,
+        decimal_mode = None,
+        decimal_places = None,
         spaces_in_braces = None,
         fixed_cjk_width = None,
         sort = None,
@@ -98,6 +104,8 @@ impl PyOptions {
         cost_column: Option<usize>,
         inline_comment_column: Option<usize>,
         thousands_separator: Option<String>,
+        decimal_mode: Option<String>,
+        decimal_places: Option<usize>,
         spaces_in_braces: Option<bool>,
         fixed_cjk_width: Option<bool>,
         sort: Option<&Bound<'_, PyAny>>,
@@ -105,14 +113,17 @@ impl PyOptions {
         sort_exclude: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let sort = sort.map(parse_sort).transpose()?;
-        let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+        let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
         let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+        let decimal_mode = decimal_mode.map(|s| parse_enum(&s)).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
             cost_column,
             inline_comment_column,
             thousands_separator,
+            decimal_mode,
+            decimal_places,
             spaces_in_braces,
             fixed_cjk_width,
             sort,
@@ -143,13 +154,16 @@ impl PyOptions {
         let sort_exclude_str = format!("[{}]", sort_exclude.join(", "));
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, inline_comment_column={}, \
-             thousands_separator='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
+             thousands_separator='{}', decimal_mode='{}', decimal_places={}, \
+             spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
              sort_timeless={}, sort_exclude={})",
             o.indent,
             o.currency_column,
             o.cost_column,
             o.inline_comment_column,
             ts,
+            o.decimal_mode,
+            o.decimal_places,
             if o.spaces_in_braces { "True" } else { "False" },
             if o.fixed_cjk_width { "True" } else { "False" },
             sort,
@@ -208,6 +222,8 @@ fn resolve_options(
     cost_column: Option<usize>,
     inline_comment_column: Option<usize>,
     thousands_separator: Option<String>,
+    decimal_mode: Option<String>,
+    decimal_places: Option<usize>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<SortOrder>,
@@ -223,6 +239,10 @@ fn resolve_options(
         Some(s) => parse_thousands(&s)?,
         None => base.thousands_separator,
     };
+    let decimal_mode = match decimal_mode {
+        Some(s) => parse_enum(&s)?,
+        None => base.decimal_mode,
+    };
 
     Ok(Options {
         indent: indent.unwrap_or(base.indent),
@@ -230,6 +250,8 @@ fn resolve_options(
         cost_column: cost_column.unwrap_or(base.cost_column),
         inline_comment_column: inline_comment_column.unwrap_or(base.inline_comment_column),
         thousands_separator: ts,
+        decimal_mode,
+        decimal_places: decimal_places.unwrap_or(base.decimal_places),
         spaces_in_braces: spaces_in_braces.unwrap_or(base.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(base.fixed_cjk_width),
         sort: sort.unwrap_or(base.sort),
@@ -275,6 +297,8 @@ fn load_project_config(dir: &str) -> PyResult<PyOptions> {
     cost_column = None,
     inline_comment_column = None,
     thousands_separator = None,
+    decimal_mode = None,
+    decimal_places = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -290,6 +314,8 @@ fn format(
     cost_column: Option<usize>,
     inline_comment_column: Option<usize>,
     thousands_separator: Option<String>,
+    decimal_mode: Option<String>,
+    decimal_places: Option<usize>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -297,7 +323,7 @@ fn format(
     sort_exclude: Option<Vec<String>>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
-    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
     let opts = resolve_options(
         options,
@@ -307,6 +333,8 @@ fn format(
         cost_column,
         inline_comment_column,
         thousands_separator,
+        decimal_mode,
+        decimal_places,
         spaces_in_braces,
         fixed_cjk_width,
         sort,
@@ -327,6 +355,8 @@ fn format(
     cost_column = None,
     inline_comment_column = None,
     thousands_separator = None,
+    decimal_mode = None,
+    decimal_places = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -343,6 +373,8 @@ fn format_file(
     cost_column: Option<usize>,
     inline_comment_column: Option<usize>,
     thousands_separator: Option<String>,
+    decimal_mode: Option<String>,
+    decimal_places: Option<usize>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -355,7 +387,7 @@ fn format_file(
         ));
     }
     let sort = sort.map(parse_sort).transpose()?;
-    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
     let base_config = resolve_config_param(config, path)?;
     let opts = resolve_options(
@@ -366,6 +398,8 @@ fn format_file(
         cost_column,
         inline_comment_column,
         thousands_separator,
+        decimal_mode,
+        decimal_places,
         spaces_in_braces,
         fixed_cjk_width,
         sort,
@@ -389,6 +423,8 @@ fn format_file(
     cost_column = None,
     inline_comment_column = None,
     thousands_separator = None,
+    decimal_mode = None,
+    decimal_places = None,
     spaces_in_braces = None,
     fixed_cjk_width = None,
     sort = None,
@@ -405,6 +441,8 @@ fn format_recursive(
     cost_column: Option<usize>,
     inline_comment_column: Option<usize>,
     thousands_separator: Option<String>,
+    decimal_mode: Option<String>,
+    decimal_places: Option<usize>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
     sort: Option<&Bound<'_, PyAny>>,
@@ -419,7 +457,7 @@ fn format_recursive(
         ));
     }
     let sort = sort.map(parse_sort).transpose()?;
-    let sort_timeless = sort_timeless.map(|s| parse_timeless(&s)).transpose()?;
+    let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
     let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
 
     let p = Path::new(path);
@@ -438,6 +476,8 @@ fn format_recursive(
         cost_column,
         inline_comment_column,
         thousands_separator,
+        decimal_mode,
+        decimal_places,
         spaces_in_braces,
         fixed_cjk_width,
         sort,

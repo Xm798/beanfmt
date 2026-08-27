@@ -113,6 +113,39 @@ impl FromStr for TimelessPosition {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
+pub enum DecimalMode {
+    Keep,
+    Minimal,
+    Pad,
+}
+
+impl FromStr for DecimalMode {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "keep" => Ok(DecimalMode::Keep),
+            "minimal" => Ok(DecimalMode::Minimal),
+            "pad" => Ok(DecimalMode::Pad),
+            other => Err(format!(
+                "invalid decimal_mode: {other:?}, expected \"keep\", \"minimal\", or \"pad\""
+            )),
+        }
+    }
+}
+
+impl std::fmt::Display for DecimalMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DecimalMode::Keep => write!(f, "keep"),
+            DecimalMode::Minimal => write!(f, "minimal"),
+            DecimalMode::Pad => write!(f, "pad"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     pub indent: usize,
@@ -124,6 +157,9 @@ pub struct Options {
     /// free-form payload, which may contain a quoted `;`).
     pub inline_comment_column: usize,
     pub thousands_separator: ThousandsSeparator,
+    pub decimal_mode: DecimalMode,
+    /// Fraction width used by [`DecimalMode::Pad`].
+    pub decimal_places: usize,
     pub spaces_in_braces: bool,
     pub fixed_cjk_width: bool,
     pub sort: SortOrder,
@@ -145,6 +181,8 @@ impl Default for Options {
             cost_column: 75,
             inline_comment_column: 0,
             thousands_separator: ThousandsSeparator::Keep,
+            decimal_mode: DecimalMode::Keep,
+            decimal_places: 2,
             spaces_in_braces: false,
             fixed_cjk_width: true,
             sort: SortOrder::Off,

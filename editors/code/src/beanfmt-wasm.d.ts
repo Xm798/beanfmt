@@ -7,6 +7,8 @@ declare module "*/wasm" {
     cost_column: number,
     inline_comment_column: number,
     thousands: string,
+    decimal_mode: string,
+    decimal_places: number,
     spaces_in_braces: boolean,
     fixed_cjk_width: boolean,
     sort: string,

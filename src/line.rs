@@ -78,8 +78,8 @@ pub enum Line<'a> {
 
 const DATE: &str = r"\d{4}-\d{2}-\d{2}";
 const ACCOUNT: &str = r"[A-Z\p{Lu}][\w-]*(?::[\w\p{L}-]+)+";
-const NUMBER: &str = r"-? ?\d[\d,]*(?:\.\d+)?";
-const CURRENCY: &str = r"[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]";
+pub(crate) const NUMBER: &str = r"-? ?\d[\d,]*(?:\.\d+)?";
+pub(crate) const CURRENCY: &str = r"[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]";
 
 static TRANSACTION_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(&format!(r"^({DATE})\s+(txn|tx|\*|!|T|X)\s*(.*?)\s*$")).unwrap());

@@ -3,7 +3,9 @@ use serde::de::{self, Deserializer};
 use std::fs;
 use std::path::Path;
 
-use crate::options::{Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition};
+use crate::options::{
+    DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator, TimelessPosition,
+};
 
 impl<'de> Deserialize<'de> for SortOrder {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
@@ -29,19 +31,22 @@ impl<'de> Deserialize<'de> for SortOrder {
     }
 }
 
-impl<'de> Deserialize<'de> for SortableDirective {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(|msg: String| de::Error::custom(msg))
-    }
+/// Deserialize each type from a TOML string through its `FromStr`, so the accepted
+/// spellings and error messages stay identical to the CLI and the bindings.
+macro_rules! impl_deserialize_from_str {
+    ($($ty:ty),+ $(,)?) => {
+        $(
+            impl<'de> Deserialize<'de> for $ty {
+                fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+                    let s = String::deserialize(deserializer)?;
+                    s.parse().map_err(|msg: String| de::Error::custom(msg))
+                }
+            }
+        )+
+    };
 }
 
-impl<'de> Deserialize<'de> for TimelessPosition {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(|msg: String| de::Error::custom(msg))
-    }
-}
+impl_deserialize_from_str!(SortableDirective, TimelessPosition, DecimalMode);
 
 #[derive(Debug, Clone, Default, Deserialize)]
 pub struct FileConfig {
@@ -50,6 +55,8 @@ pub struct FileConfig {
     pub cost_column: Option<usize>,
     pub inline_comment_column: Option<usize>,
     pub thousands: Option<String>,
+    pub decimal_mode: Option<DecimalMode>,
+    pub decimal_places: Option<usize>,
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
     pub sort: Option<SortOrder>,
@@ -65,6 +72,8 @@ impl FileConfig {
             cost_column: other.cost_column.or(self.cost_column),
             inline_comment_column: other.inline_comment_column.or(self.inline_comment_column),
             thousands: other.thousands.or(self.thousands),
+            decimal_mode: other.decimal_mode.or(self.decimal_mode),
+            decimal_places: other.decimal_places.or(self.decimal_places),
             spaces_in_braces: other.spaces_in_braces.or(self.spaces_in_braces),
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
             sort: other.sort.or(self.sort),
@@ -97,6 +106,8 @@ impl FileConfig {
                 .inline_comment_column
                 .unwrap_or(defaults.inline_comment_column),
             thousands_separator,
+            decimal_mode: self.decimal_mode.unwrap_or(defaults.decimal_mode),
+            decimal_places: self.decimal_places.unwrap_or(defaults.decimal_places),
             spaces_in_braces: self.spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
             sort: self.sort.unwrap_or(defaults.sort),
@@ -430,6 +441,32 @@ thousands = "add"
         let dir = tempfile::tempdir().unwrap();
         let config = find_project_config_strict(dir.path()).unwrap();
         assert_eq!(config.indent, None);
+    }
+
+    #[test]
+    fn load_decimal_mode_from_toml() {
+        let config: FileConfig = toml::from_str(r#"decimal_mode = "minimal""#).unwrap();
+        assert_eq!(config.decimal_mode, Some(DecimalMode::Minimal));
+    }
+
+    #[test]
+    fn load_decimal_mode_invalid() {
+        let result: Result<FileConfig, _> = toml::from_str(r#"decimal_mode = "round""#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn decimal_defaults_when_absent() {
+        let options = FileConfig::default().into_options();
+        assert_eq!(options.decimal_mode, DecimalMode::Keep);
+        assert_eq!(options.decimal_places, 2);
+    }
+
+    #[test]
+    fn load_decimal_places_from_toml() {
+        let config: FileConfig = toml::from_str("decimal_places = 4").unwrap();
+        assert_eq!(config.decimal_places, Some(4));
+        assert_eq!(config.into_options().decimal_places, 4);
     }
 
     #[test]

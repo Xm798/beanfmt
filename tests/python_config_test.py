@@ -189,6 +189,63 @@ class TestFormatFileConfig:
 
 
 # ---------------------------------------------------------------------------
+# decimal_mode / decimal_places
+# ---------------------------------------------------------------------------
+
+
+class TestDecimalOptions:
+    SOURCE = '2024-01-01 balance Assets:Bank  1000.5 USD\n'
+
+    def test_default_keeps_decimals(self):
+        assert "1000.5 USD" in beanfmt.format(self.SOURCE)
+
+    def test_pad_kwarg(self):
+        result = beanfmt.format(self.SOURCE, decimal_mode="pad")
+        assert "1000.50 USD" in result
+
+    def test_pad_custom_places(self):
+        result = beanfmt.format(self.SOURCE, decimal_mode="pad", decimal_places=4)
+        assert "1000.5000 USD" in result
+
+    def test_minimal_kwarg(self):
+        result = beanfmt.format(
+            '2024-01-01 balance Assets:Bank  1000.500 USD\n', decimal_mode="minimal"
+        )
+        assert "1000.5 USD" in result
+
+    def test_invalid_mode_raises(self):
+        with pytest.raises(ValueError):
+            beanfmt.format(self.SOURCE, decimal_mode="round")
+
+    def test_options_object(self):
+        opts = beanfmt.Options(decimal_mode="pad", decimal_places=3)
+        assert "decimal_mode='pad'" in repr(opts)
+        assert "decimal_places=3" in repr(opts)
+        assert "1000.500 USD" in beanfmt.format(self.SOURCE, options=opts)
+
+    def test_from_config_file(self):
+        opts = beanfmt.parse_config('decimal_mode = "pad"\ndecimal_places = 3\n')
+        assert "decimal_mode='pad'" in repr(opts)
+        assert "decimal_places=3" in repr(opts)
+
+    def test_config_file_invalid_mode(self):
+        with pytest.raises(ValueError):
+            beanfmt.parse_config('decimal_mode = "round"\n')
+
+    def test_kwarg_overrides_config_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, ".beanfmt.toml"), "w") as f:
+                f.write('decimal_mode = "pad"\ndecimal_places = 3\n')
+            path = os.path.join(d, "test.bean")
+            with open(path, "w") as f:
+                f.write(self.SOURCE)
+            result = beanfmt.format_file(path, config=True)
+            assert "1000.500 USD" in result
+            result = beanfmt.format_file(path, config=True, decimal_places=1)
+            assert "1000.5 USD" in result
+
+
+# ---------------------------------------------------------------------------
 # format_recursive with config param
 # ---------------------------------------------------------------------------
 

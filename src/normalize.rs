@@ -1,5 +1,7 @@
-use crate::options::ThousandsSeparator;
+use crate::line::{CURRENCY, NUMBER};
+use crate::options::{DecimalMode, Options, ThousandsSeparator};
 use regex::Regex;
+use std::borrow::Cow;
 use std::sync::LazyLock;
 
 // \s* consumes all whitespace so normalize_comment can re-emit exactly one space
@@ -90,6 +92,68 @@ pub fn normalize_thousands(num_str: &str, separator: &ThousandsSeparator) -> Str
             }
         }
     }
+}
+
+/// Normalize the fractional digits of an extracted number string.
+pub fn normalize_decimals(num_str: &str, mode: DecimalMode, places: usize) -> String {
+    if mode == DecimalMode::Keep {
+        return num_str.to_string();
+    }
+
+    // The sign may be detached from the digits (e.g. "- 619.47"); it is still one number.
+    let compact = if num_str.contains(' ') {
+        Cow::Owned(num_str.replace(' ', ""))
+    } else {
+        Cow::Borrowed(num_str)
+    };
+    let (int_part, fraction) = compact.split_once('.').unwrap_or((&compact, ""));
+
+    let fraction = if mode == DecimalMode::Minimal {
+        Cow::Borrowed(fraction.trim_end_matches('0'))
+    } else {
+        Cow::Owned(format!("{fraction:0<places$}"))
+    };
+
+    if fraction.is_empty() {
+        return int_part.to_string();
+    }
+    let mut result = String::with_capacity(int_part.len() + 1 + fraction.len());
+    result.push_str(int_part);
+    result.push('.');
+    result.push_str(&fraction);
+    result
+}
+
+/// Apply thousands separators and decimal normalization to an extracted number string.
+pub fn normalize_number(number: &str, options: &Options) -> String {
+    let number = normalize_thousands(number, &options.thousands_separator);
+    match options.decimal_mode {
+        DecimalMode::Keep => number,
+        mode => normalize_decimals(&number, mode, options.decimal_places),
+    }
+}
+
+/// Normalize the fractional digits of the first `<number> <CURRENCY>` amount in a
+/// cost annotation (`{...}`, `{{...}}`) or a price annotation (`@`, `@@`).
+/// Requiring a currency after the number keeps dates such as `{2024-01-01}` intact.
+pub fn normalize_amount_decimals(s: &str, mode: DecimalMode, places: usize) -> Cow<'_, str> {
+    if mode == DecimalMode::Keep {
+        return Cow::Borrowed(s);
+    }
+
+    // `NUMBER` admits a space between sign and digits, so any run of whitespace before the
+    // number is captured separately and re-emitted rather than absorbed into the number.
+    static AMOUNT_RE: LazyLock<Regex> =
+        LazyLock::new(|| Regex::new(&format!(r"(\s*)({NUMBER})(\s+{CURRENCY})")).unwrap());
+
+    AMOUNT_RE.replace(s, |caps: &regex::Captures| {
+        format!(
+            "{}{}{}",
+            &caps[1],
+            normalize_decimals(&caps[2], mode, places),
+            &caps[3]
+        )
+    })
 }
 
 fn add_commas(int_part: &str) -> String {
