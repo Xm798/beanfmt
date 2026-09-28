@@ -1,17 +1,25 @@
 use beanfmt::config::FileConfig;
 use beanfmt::options::{AmountScope, DecimalMode, SortOrder, SortableDirective, TimelessPosition};
 use beanfmt::recursive::format_recursive;
-use clap::{ArgAction, Parser};
+use clap::{ArgAction, CommandFactory, Parser};
 use std::fs;
-use std::io::{self, Read};
+use std::io::{self, IsTerminal, Read};
 use std::path::PathBuf;
 use std::process;
 
 #[derive(Parser)]
-#[command(name = "beanfmt", about = "A fast beancount file formatter")]
+#[command(
+    name = "beanfmt",
+    about = "A fast beancount file formatter",
+    version,
+    disable_version_flag = true
+)]
 struct Cli {
-    /// Input file(s). Use - for stdin.
-    #[arg(default_value = "-")]
+    /// Print version
+    #[arg(short = 'v', visible_short_alias = 'V', long, action = ArgAction::Version)]
+    version: (),
+
+    /// Input file(s). Use - for stdin (the default when stdin is piped).
     files: Vec<String>,
 
     /// Number of spaces for indentation
@@ -134,7 +142,15 @@ impl Cli {
 }
 
 fn main() {
-    let cli = Cli::parse();
+    let mut cli = Cli::parse();
+
+    if cli.files.is_empty() {
+        if io::stdin().is_terminal() {
+            let _ = Cli::command().print_help();
+            process::exit(2);
+        }
+        cli.files.push("-".to_string());
+    }
 
     let file_config = if cli.no_config {
         FileConfig::default()
