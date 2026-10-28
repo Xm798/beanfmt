@@ -66,7 +66,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 price,
                 comment,
             } => {
-                let number = number.map(|n| normalize_number(n, options));
+                let number = number.map(|n| normalize_number(n, currency, options));
                 let cost = cost.map(|c| {
                     normalize_braces(&normalize_amount(c, options), options.spaces_in_braces)
                 });
@@ -96,7 +96,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 currency,
                 comment,
             } => {
-                let number = normalize_number(number, options);
+                let number = normalize_number(number, Some(currency), options);
                 align_balance(date, account, &number, currency, comment, options)
             }
             Line::Open {
@@ -118,7 +118,7 @@ pub fn format(input: &str, options: &Options) -> String {
                 comment,
             } => {
                 let number = if options.amount_scope == AmountScope::All {
-                    normalize_number(number, options)
+                    normalize_number(number, Some(currency), options)
                 } else {
                     Cow::Borrowed(number)
                 };

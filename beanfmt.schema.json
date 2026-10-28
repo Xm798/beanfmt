@@ -49,6 +49,15 @@
       "maximum": 20,
       "description": "Number of fractional digits to pad to when decimal_mode is \"pad\"."
     },
+    "display_precision": {
+      "type": "array",
+      "default": [],
+      "items": {
+        "type": "string",
+        "pattern": "^\\s*[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]\\s*:\\s*[0-9]+(\\.[0-9]{1,20})?\\s*$"
+      },
+      "description": "Per-currency fraction width used instead of decimal_places when decimal_mode is \"pad\", written like Beancount's display_precision option: \"CNY:0.01\" gives two digits, \"POINTS:1\" none. Unlike decimal_places the width is exact, so extra trailing zeros are dropped (2900.00 \u2192 2900); non-zero digits are kept. A later entry for the same currency wins."
+    },
     "amount_scope": {
       "type": "string",
       "default": "all",

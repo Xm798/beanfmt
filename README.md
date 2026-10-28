@@ -56,6 +56,7 @@ inline_comment_column = 0   # column to align inline comments to; 0 disables
 thousands = "add"
 decimal_mode = "pad"    # "keep", "minimal", or "pad"
 decimal_places = 2      # fraction width used by "pad"
+display_precision = ["POINTS:1", "BTC:0.00000001"]  # per-currency override of decimal_places
 amount_scope = "all"    # "all" or "amounts"
 spaces_in_braces = true
 fixed_cjk_width = true
@@ -64,7 +65,7 @@ sort_timeless = "keep"   # "begin", "end", or "keep"
 sort_exclude = ["open", "close"]  # excluded types act as sort barriers
 ```
 
-All fields are optional. Unspecified fields inherit from the next lower priority layer. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
+All fields are optional. Unspecified fields inherit from the next lower priority layer. A higher layer replaces a field's value as a whole, including lists such as `sort_exclude`; `display_precision` is the exception and merges per currency, so `--display-precision CNY:0.01` adds or changes `CNY` and keeps the other currencies from the config files. Use `--no-config` to skip all configuration file loading. See [`beanfmt.toml`](beanfmt.toml) for a full reference with comments.
 
 Config file support varies by target:
 
@@ -109,6 +110,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | Thousands separator: `add`, `remove`, or `keep` |
 | `--decimal-mode <MODE>` | `keep` | Decimal places: `keep`, `minimal` (strip trailing zeros), or `pad` |
 | `--decimal-places <N>` | `2` | Fraction width to pad to when `--decimal-mode pad` |
+| `--display-precision <LIST>` | (none) | Comma-separated per-currency fraction widths for `--decimal-mode pad`, written like Beancount's `display_precision` option: `CNY:0.01` (two digits), `POINTS:1` (none). Unlike `--decimal-places`, the width is exact: extra trailing zeros are dropped too (`2900.00` → `2900`), non-zero digits are kept |
 | `--amount-scope <SCOPE>` | `all` | Which numbers `--thousands` and `--decimal-mode` reach: `all` (posting and `balance` amounts plus costs, price annotations and `price` directives), or `amounts` (posting and `balance` amounts only) |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | off | Add spaces inside cost braces `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | on | CJK double-width alignment |
@@ -183,6 +185,7 @@ const output = format(
   "off",       // sort
   "keep",      // sort_timeless
   undefined,   // sort_exclude
+  undefined,   // display_precision, e.g. ["POINTS:1"]
 );
 ```
 
@@ -209,6 +212,7 @@ Available settings:
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`, `"remove"`, or `"keep"` |
 | `beanfmt.decimalMode` | `"keep"` | Decimal places: `"keep"`, `"minimal"`, or `"pad"` |
 | `beanfmt.decimalPlaces` | `2` | Fraction width to pad to when `decimalMode` is `"pad"` |
+| `beanfmt.displayPrecision` | `[]` | Per-currency overrides of `decimalPlaces`, e.g. `["POINTS:1", "CNY:0.01"]` |
 | `beanfmt.amountScope` | `"all"` | Which numbers get normalized: `"all"` (posting and `balance` amounts plus costs, price annotations and `price` directives), or `"amounts"` (posting and `balance` amounts only) |
 | `beanfmt.spacesInBraces` | `false` | Spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | CJK double-width alignment |

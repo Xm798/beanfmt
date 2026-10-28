@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
-use crate::options::{Options, SortableDirective, ThousandsSeparator};
+use crate::options::{DisplayPrecision, Options, SortableDirective, ThousandsSeparator};
 
 fn parse_thousands(s: &str) -> Result<ThousandsSeparator, JsError> {
     match s.to_ascii_lowercase().as_str() {
@@ -36,11 +36,19 @@ pub fn format(
     sort: &str,
     sort_timeless: &str,
     sort_exclude: Option<Vec<String>>,
+    display_precision: Option<Vec<String>>,
 ) -> Result<String, JsError> {
     let sort_exclude = match sort_exclude {
         Some(items) => items
             .iter()
             .map(|s| parse_enum::<SortableDirective>(s))
+            .collect::<Result<Vec<_>, _>>()?,
+        None => Vec::new(),
+    };
+    let display_precision = match display_precision {
+        Some(items) => items
+            .iter()
+            .map(|s| parse_enum::<DisplayPrecision>(s))
             .collect::<Result<Vec<_>, _>>()?,
         None => Vec::new(),
     };
@@ -52,6 +60,7 @@ pub fn format(
         thousands_separator: parse_thousands(thousands)?,
         decimal_mode: parse_enum(decimal_mode)?,
         decimal_places,
+        display_precision,
         amount_scope: parse_enum(amount_scope)?,
         spaces_in_braces,
         fixed_cjk_width,

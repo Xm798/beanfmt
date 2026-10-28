@@ -1,4 +1,7 @@
+use crate::line::CURRENCY;
+use regex::Regex;
 use std::str::FromStr;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "cli", derive(clap::ValueEnum))]
@@ -179,6 +182,76 @@ impl std::fmt::Display for AmountScope {
     }
 }
 
+/// The widest [`DisplayPrecision`], matching the range `decimal_places` accepts in the
+/// editor settings.
+pub const MAX_DISPLAY_PRECISION: usize = 20;
+
+/// A per-currency fraction width, written like Beancount's `display_precision` option:
+/// `CNY:0.01` gives `CNY` two fractional digits, `POINTS:1` gives `POINTS` none.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DisplayPrecision {
+    pub currency: String,
+    pub places: usize,
+}
+
+impl FromStr for DisplayPrecision {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let invalid = || {
+            format!(
+                "invalid display_precision: {s:?}, expected \"CURRENCY:EXAMPLE\" such as \"CNY:0.01\" or \"POINTS:1\""
+            )
+        };
+        static CURRENCY_RE: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(&format!("^{CURRENCY}$")).unwrap());
+
+        let digits = |p: &str| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit());
+        let (currency, example) = s.split_once(':').ok_or_else(invalid)?;
+        // Comma-separated CLI lists keep the space after each comma.
+        let (currency, example) = (currency.trim(), example.trim());
+        let places = match example.split_once('.') {
+            Some((int_part, fraction)) if digits(int_part) && digits(fraction) => fraction.len(),
+            None if digits(example) => 0,
+            _ => return Err(invalid()),
+        };
+        if !CURRENCY_RE.is_match(currency) {
+            return Err(format!(
+                "invalid display_precision: {s:?}, {currency:?} is not a currency (uppercase, e.g. \"CNY\")"
+            ));
+        }
+        if places > MAX_DISPLAY_PRECISION {
+            return Err(format!(
+                "invalid display_precision: {s:?}, at most {MAX_DISPLAY_PRECISION} fractional digits"
+            ));
+        }
+        Ok(DisplayPrecision {
+            currency: currency.to_string(),
+            places,
+        })
+    }
+}
+
+impl std::fmt::Display for DisplayPrecision {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.places {
+            0 => write!(f, "{}:1", self.currency),
+            n => write!(f, "{}:0.{}1", self.currency, "0".repeat(n - 1)),
+        }
+    }
+}
+
+/// Layer `overrides` onto `base` per currency: a currency named in `overrides` takes its
+/// width from there, every other currency keeps the one from `base`.
+pub fn merge_display_precision(
+    mut base: Vec<DisplayPrecision>,
+    overrides: Vec<DisplayPrecision>,
+) -> Vec<DisplayPrecision> {
+    base.retain(|b| !overrides.iter().any(|o| o.currency == b.currency));
+    base.extend(overrides);
+    base
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Options {
     pub indent: usize,
@@ -193,6 +266,10 @@ pub struct Options {
     pub decimal_mode: DecimalMode,
     /// Fraction width used by [`DecimalMode::Pad`].
     pub decimal_places: usize,
+    /// Per-currency fraction widths for [`DecimalMode::Pad`]. Unlike the minimum set by
+    /// [`Options::decimal_places`], each is exact: zeros beyond it are dropped. A later
+    /// entry for the same currency wins.
+    pub display_precision: Vec<DisplayPrecision>,
     /// Which numbers thousands-separator and decimal normalization reach.
     pub amount_scope: AmountScope,
     pub spaces_in_braces: bool,
@@ -206,6 +283,14 @@ impl Options {
     pub fn indent_str(&self) -> String {
         " ".repeat(self.indent)
     }
+
+    pub fn display_precision_for(&self, currency: Option<&str>) -> Option<usize> {
+        let currency = currency?;
+        self.display_precision
+            .iter()
+            .rfind(|p| p.currency == currency)
+            .map(|p| p.places)
+    }
 }
 
 impl Default for Options {
@@ -218,6 +303,7 @@ impl Default for Options {
             thousands_separator: ThousandsSeparator::Keep,
             decimal_mode: DecimalMode::Keep,
             decimal_places: 2,
+            display_precision: Vec::new(),
             amount_scope: AmountScope::All,
             spaces_in_braces: false,
             fixed_cjk_width: true,

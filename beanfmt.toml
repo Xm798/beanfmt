@@ -40,6 +40,12 @@ decimal_mode = "keep"
 # Fractional digits to pad to when decimal_mode = "pad" (default: 2)
 decimal_places = 2
 
+# Per-currency fraction widths for decimal_mode = "pad", written like Beancount's
+# display_precision option: "CNY:0.01" gives two fractional digits, "POINTS:1" none.
+# Unlike decimal_places the width is exact: 2900.00 → 2900, but 2900.5 stays (default: [])
+# Layers merge per currency: the CLI or a project config changes only the currencies it names.
+# display_precision = ["POINTS:1", "BTC:0.00000001"]
+
 # Which numbers thousands and decimal_mode reach: "all" or "amounts" (default: "all")
 #   "all"     — posting and balance amounts plus costs, price annotations and price directives
 #   "amounts" — posting and balance amounts only

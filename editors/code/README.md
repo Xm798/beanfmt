@@ -39,6 +39,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.thousandsSeparator` | `"keep"` | Thousands separator: `"add"`, `"remove"`, or `"keep"` |
 | `beanfmt.decimalMode` | `"keep"` | Decimal places: `"keep"`, `"minimal"` (strip trailing zeros), or `"pad"` |
 | `beanfmt.decimalPlaces` | `2` | Fraction width to pad to when `decimalMode` is `"pad"` |
+| `beanfmt.displayPrecision` | `[]` | Per-currency overrides of `decimalPlaces`, written like Beancount's `display_precision` option, e.g. `["POINTS:1", "CNY:0.01"]` |
 | `beanfmt.amountScope` | `"all"` | Which numbers get normalized: `"all"` (posting and `balance` amounts plus costs, price annotations and `price` directives), or `"amounts"` (posting and `balance` amounts only) |
 | `beanfmt.spacesInBraces` | `false` | Add spaces inside cost braces |
 | `beanfmt.fixedCJKWidth` | `true` | Treat CJK characters as double-width for alignment |
@@ -89,6 +90,7 @@ A fast [Beancount](https://beancount.github.io/) file formatter extension for Vi
 | `beanfmt.thousandsSeparator` | `"keep"` | 千位分隔符处理：`"add"` 添加、`"remove"` 移除、`"keep"` 保持 |
 | `beanfmt.decimalMode` | `"keep"` | 小数位处理：`"keep"` 保持、`"minimal"` 去除末尾的零、`"pad"` 补齐 |
 | `beanfmt.decimalPlaces` | `2` | `decimalMode` 为 `"pad"` 时补齐到的小数位数 |
+| `beanfmt.displayPrecision` | `[]` | 按货币覆盖 `decimalPlaces`，写法同 Beancount 的 `display_precision` 选项，如 `["POINTS:1", "CNY:0.01"]` |
 | `beanfmt.amountScope` | `"all"` | 数字规范化的作用范围：`"all"`（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令）、`"amounts"`（仅 posting 与 `balance` 金额） |
 | `beanfmt.spacesInBraces` | `false` | 成本花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | 将 CJK 字符视为双宽度进行对齐 |

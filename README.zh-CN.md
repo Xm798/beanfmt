@@ -54,6 +54,7 @@ inline_comment_column = 0   # 行内注释对齐列；0 表示不对齐
 thousands = "add"
 decimal_mode = "pad"    # "keep"、"minimal" 或 "pad"
 decimal_places = 2      # "pad" 模式补齐到的小数位数
+display_precision = ["POINTS:1", "BTC:0.00000001"]  # 按货币覆盖 decimal_places
 amount_scope = "all"    # "all" 或 "amounts"
 spaces_in_braces = true
 fixed_cjk_width = true
@@ -62,7 +63,7 @@ sort_timeless = "keep"   # "begin"、"end" 或 "keep"
 sort_exclude = ["open", "close"]  # 排除的指令类型作为排序屏障
 ```
 
-所有字段均为可选，未指定的字段从下一优先级层继承。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
+所有字段均为可选，未指定的字段从下一优先级层继承。高优先级层会整体替换字段的值，`sort_exclude` 这类列表也一样；`display_precision` 例外，按货币合并：`--display-precision CNY:0.01` 只新增或修改 `CNY`，配置文件里其他货币的设置保留。使用 `--no-config` 可跳过所有配置文件加载。完整配置参考见 [`beanfmt.toml`](beanfmt.toml)。
 
 各入口对配置文件的支持：
 
@@ -107,6 +108,7 @@ beanfmt --thousands add --sort ledger.beancount
 | `--thousands <MODE>` | `keep` | 千分位分隔符：`add`（添加）、`remove`（移除）、`keep`（保持） |
 | `--decimal-mode <MODE>` | `keep` | 小数位处理：`keep`（保持）、`minimal`（去除末尾的零）、`pad`（补齐） |
 | `--decimal-places <N>` | `2` | `--decimal-mode pad` 时补齐到的小数位数 |
+| `--display-precision <LIST>` | （无） | 逗号分隔，按货币指定 `--decimal-mode pad` 的小数位数，写法同 Beancount 的 `display_precision` 选项：`CNY:0.01`（两位）、`POINTS:1`（不保留小数）。与 `--decimal-places` 不同，这里的位数是精确的：多出的末尾零也会去掉（`2900.00` → `2900`），非零数字保留 |
 | `--amount-scope <SCOPE>` | `all` | `--thousands` 与 `--decimal-mode` 的作用范围：`all`（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令）、`amounts`（仅 posting 与 `balance` 金额） |
 | `--spaces-in-braces` / `--no-spaces-in-braces` | 关闭 | 在成本花括号内添加空格 `{ ... }` |
 | `--fixed-cjk-width` / `--no-fixed-cjk-width` | 开启 | CJK 双宽度字符对齐 |
@@ -179,6 +181,7 @@ const output = format(
   "off",       // sort
   "keep",      // sort_timeless
   undefined,   // sort_exclude
+  undefined,   // display_precision，如 ["POINTS:1"]
 );
 ```
 
@@ -205,6 +208,7 @@ const output = format(
 | `beanfmt.thousandsSeparator` | `"keep"` | `"add"`（添加）、`"remove"`（移除）、`"keep"`（保持） |
 | `beanfmt.decimalMode` | `"keep"` | 小数位处理：`"keep"`（保持）、`"minimal"`（去除末尾的零）、`"pad"`（补齐） |
 | `beanfmt.decimalPlaces` | `2` | `decimalMode` 为 `"pad"` 时补齐到的小数位数 |
+| `beanfmt.displayPrecision` | `[]` | 按货币覆盖 `decimalPlaces`，如 `["POINTS:1", "CNY:0.01"]` |
 | `beanfmt.amountScope` | `"all"` | 数字规范化的作用范围：`"all"`（posting 与 `balance` 金额，以及成本、价格标注与 `price` 指令）、`"amounts"`（仅 posting 与 `balance` 金额） |
 | `beanfmt.spacesInBraces` | `false` | 花括号内添加空格 |
 | `beanfmt.fixedCJKWidth` | `true` | CJK 双宽度字符对齐 |

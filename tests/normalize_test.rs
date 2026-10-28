@@ -1,5 +1,5 @@
 use beanfmt::normalize::*;
-use beanfmt::options::{DecimalMode, Options, ThousandsSeparator};
+use beanfmt::options::{DecimalMode, DisplayPrecision, Options, ThousandsSeparator};
 
 // normalize_indent tests
 
@@ -250,6 +250,69 @@ fn decimals_pad_leaves_longer_fraction() {
 fn decimals_pad_zero_places_leaves_integer() {
     assert_eq!(normalize_decimals("5", DecimalMode::Pad, 0), "5");
     assert_eq!(normalize_decimals("5.6", DecimalMode::Pad, 0), "5.6");
+}
+
+#[test]
+fn display_precision_parse_and_display() {
+    let cases = [
+        ("CNY:0.01", "CNY", 2),
+        ("POINTS.CTRIP:1", "POINTS.CTRIP", 0),
+        ("BTC:0.00000001", "BTC", 8),
+    ];
+    for (input, currency, places) in cases {
+        let p: DisplayPrecision = input.parse().unwrap();
+        assert_eq!(p.currency, currency, "input: {input}");
+        assert_eq!(p.places, places, "input: {input}");
+        assert_eq!(p.to_string(), input);
+    }
+}
+
+#[test]
+fn display_precision_rejects_malformed() {
+    for input in [
+        "CNY",
+        ":0.01",
+        "CNY:",
+        "CNY:abc",
+        "CNY:1.",
+        "CNY:.01",
+        "cny:0.01",
+        "C NY:0.01",
+        "BTC:0.000000000000000000001",
+    ] {
+        assert!(input.parse::<DisplayPrecision>().is_err(), "input: {input}");
+    }
+}
+
+#[test]
+fn display_precision_trims_surrounding_space() {
+    let p: DisplayPrecision = " POINTS : 1 ".parse().unwrap();
+    assert_eq!(p.currency, "POINTS");
+    assert_eq!(p.places, 0);
+}
+
+#[test]
+fn display_precision_accepts_max_width() {
+    let p: DisplayPrecision = "BTC:0.00000000000000000001".parse().unwrap();
+    assert_eq!(p.places, 20);
+}
+
+#[test]
+fn amount_uses_display_precision_of_its_currency() {
+    let opts = Options {
+        display_precision: vec!["POINTS:1".parse().unwrap()],
+        ..amount_opts(DecimalMode::Pad, ThousandsSeparator::Keep)
+    };
+    assert_eq!(
+        normalize_amount("{{2900.00 POINTS}}", &opts),
+        "{{2900 POINTS}}"
+    );
+    assert_eq!(
+        normalize_amount("{{2900.50 POINTS}}", &opts),
+        "{{2900.5 POINTS}}"
+    );
+    assert_eq!(normalize_amount("@ 11.5 CNY", &opts), "@ 11.50 CNY");
+    assert_eq!(normalize_amount("@ 7.1000 CNY", &opts), "@ 7.1000 CNY");
 }
 
 #[test]

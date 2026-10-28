@@ -4,8 +4,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::options::{
-    AmountScope, DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator,
-    TimelessPosition,
+    AmountScope, DecimalMode, DisplayPrecision, Options, SortOrder, SortableDirective,
+    ThousandsSeparator, TimelessPosition, merge_display_precision,
 };
 
 impl<'de> Deserialize<'de> for SortOrder {
@@ -51,6 +51,7 @@ impl_deserialize_from_str!(
     SortableDirective,
     TimelessPosition,
     DecimalMode,
+    DisplayPrecision,
     AmountScope
 );
 
@@ -63,6 +64,7 @@ pub struct FileConfig {
     pub thousands: Option<String>,
     pub decimal_mode: Option<DecimalMode>,
     pub decimal_places: Option<usize>,
+    pub display_precision: Option<Vec<DisplayPrecision>>,
     pub amount_scope: Option<AmountScope>,
     pub spaces_in_braces: Option<bool>,
     pub fixed_cjk_width: Option<bool>,
@@ -81,6 +83,10 @@ impl FileConfig {
             thousands: other.thousands.or(self.thousands),
             decimal_mode: other.decimal_mode.or(self.decimal_mode),
             decimal_places: other.decimal_places.or(self.decimal_places),
+            display_precision: match (self.display_precision, other.display_precision) {
+                (Some(base), Some(overrides)) => Some(merge_display_precision(base, overrides)),
+                (base, overrides) => overrides.or(base),
+            },
             amount_scope: other.amount_scope.or(self.amount_scope),
             spaces_in_braces: other.spaces_in_braces.or(self.spaces_in_braces),
             fixed_cjk_width: other.fixed_cjk_width.or(self.fixed_cjk_width),
@@ -116,6 +122,7 @@ impl FileConfig {
             thousands_separator,
             decimal_mode: self.decimal_mode.unwrap_or(defaults.decimal_mode),
             decimal_places: self.decimal_places.unwrap_or(defaults.decimal_places),
+            display_precision: self.display_precision.unwrap_or(defaults.display_precision),
             amount_scope: self.amount_scope.unwrap_or(defaults.amount_scope),
             spaces_in_braces: self.spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
             fixed_cjk_width: self.fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
@@ -401,6 +408,45 @@ thousands = "add"
     #[test]
     fn load_sort_exclude_invalid_directive() {
         let result: Result<FileConfig, _> = toml::from_str(r#"sort_exclude = ["date-directive"]"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn load_display_precision_from_toml() {
+        let config: FileConfig =
+            toml::from_str(r#"display_precision = ["POINTS.CTRIP:1", "BTC:0.00000001"]"#).unwrap();
+        let options = config.into_options();
+        assert_eq!(options.display_precision_for(Some("POINTS.CTRIP")), Some(0));
+        assert_eq!(options.display_precision_for(Some("BTC")), Some(8));
+        assert_eq!(options.display_precision_for(Some("CNY")), None);
+    }
+
+    #[test]
+    fn merge_display_precision_per_currency() {
+        let global =
+            FileConfig::parse(r#"display_precision = ["POINTS:1", "BTC:0.00000001"]"#).unwrap();
+        let project =
+            FileConfig::parse(r#"display_precision = ["BTC:0.0001", "CNY:0.01"]"#).unwrap();
+        let options = global.merge(project).into_options();
+        assert_eq!(options.display_precision_for(Some("POINTS")), Some(0));
+        assert_eq!(options.display_precision_for(Some("BTC")), Some(4));
+        assert_eq!(options.display_precision_for(Some("CNY")), Some(2));
+        assert_eq!(options.display_precision.len(), 3);
+    }
+
+    #[test]
+    fn merge_sort_exclude_replaces_whole_list() {
+        let global = FileConfig::parse(r#"sort_exclude = ["open", "close"]"#).unwrap();
+        let project = FileConfig::parse(r#"sort_exclude = ["note"]"#).unwrap();
+        assert_eq!(
+            global.merge(project).sort_exclude,
+            Some(vec![SortableDirective::Note])
+        );
+    }
+
+    #[test]
+    fn load_display_precision_invalid_entry() {
+        let result: Result<FileConfig, _> = toml::from_str(r#"display_precision = ["CNY"]"#);
         assert!(result.is_err());
     }
 

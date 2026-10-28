@@ -130,11 +130,29 @@ pub fn normalize_decimals(num_str: &str, mode: DecimalMode, places: usize) -> St
 }
 
 /// Apply thousands separators and decimal normalization to an extracted number string.
-pub fn normalize_number<'a>(number: &'a str, options: &Options) -> Cow<'a, str> {
+/// `currency` selects a [`Options::display_precision`] override of the pad width.
+pub fn normalize_number<'a>(
+    number: &'a str,
+    currency: Option<&str>,
+    options: &Options,
+) -> Cow<'a, str> {
     let number = normalize_thousands(number, &options.thousands_separator);
     match options.decimal_mode {
         DecimalMode::Keep => number,
-        mode => Cow::Owned(normalize_decimals(&number, mode, options.decimal_places)),
+        DecimalMode::Minimal => Cow::Owned(normalize_decimals(&number, DecimalMode::Minimal, 0)),
+        DecimalMode::Pad => match options.display_precision_for(currency) {
+            // A declared precision is exact, so zeros beyond it go too; `decimal_places`
+            // is only a minimum width.
+            Some(exact) => {
+                let trimmed = normalize_decimals(&number, DecimalMode::Minimal, 0);
+                Cow::Owned(normalize_decimals(&trimmed, DecimalMode::Pad, exact))
+            }
+            None => Cow::Owned(normalize_decimals(
+                &number,
+                DecimalMode::Pad,
+                options.decimal_places,
+            )),
+        },
     }
 }
 
@@ -159,7 +177,7 @@ pub fn normalize_amount<'a>(s: &'a str, options: &Options) -> Cow<'a, str> {
         format!(
             "{}{}{}",
             &caps[1],
-            normalize_number(&caps[2], options),
+            normalize_number(&caps[2], Some(caps[3].trim_start()), options),
             &caps[3]
         )
     })

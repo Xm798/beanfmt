@@ -84,6 +84,15 @@
           "maximum": 20,
           "description": "Number of fractional digits to pad to when beanfmt.decimalMode is \"pad\". Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
         },
+        "beanfmt.displayPrecision": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^\\s*[A-Z][A-Z0-9'._-]{0,22}[A-Z0-9]\\s*:\\s*[0-9]+(\\.[0-9]{1,20})?\\s*$"
+          },
+          "default": [],
+          "markdownDescription": "Per-currency fraction width used instead of `beanfmt.decimalPlaces` when `beanfmt.decimalMode` is `\"pad\"`, written like Beancount's `display_precision` option: `\"CNY:0.01\"` (two digits), `\"POINTS:1\"` (none). Unlike `beanfmt.decimalPlaces` the width is exact: extra trailing zeros are dropped (`2900.00` becomes `2900`). Ignored when a .beanfmt.toml or beanfmt.toml exists in the workspace; the config file is the source of truth."
+        },
         "beanfmt.amountScope": {
           "type": "string",
           "enum": [

@@ -650,6 +650,33 @@ fn decimal_composes_with_thousands_add() {
 }
 
 #[test]
+fn decimal_pad_display_precision_overrides_per_currency() {
+    let opts = Options {
+        decimal_mode: DecimalMode::Pad,
+        display_precision: vec![
+            "POINTS.CTRIP:1".parse().unwrap(),
+            "BTC:0.00000001".parse().unwrap(),
+        ],
+        ..default_opts()
+    };
+    let input = concat!(
+        "2024-01-01 * \"Redeem\"\n",
+        "  Assets:Rewards:Ctrip  2900.00 POINTS.CTRIP {{ 11.58 CNY }}\n",
+        "  Assets:Crypto  0.5 BTC @ 7.1 CNY\n",
+        "2024-01-02 balance Assets:Rewards:Ctrip  2900.00 POINTS.CTRIP\n",
+        "2024-01-03 price POINTS.CTRIP  0.004 CNY\n",
+    );
+    let result = format(input, &opts);
+    assert!(
+        result.contains(" 2900 POINTS.CTRIP  {{ 11.58 CNY }}"),
+        "{result}"
+    );
+    assert!(result.contains(" 0.50000000 BTC @ 7.10 CNY"), "{result}");
+    assert!(result.contains(" 2900 POINTS.CTRIP\n"), "{result}");
+    assert!(result.contains(" 0.004 CNY"), "{result}");
+}
+
+#[test]
 fn decimal_keep_is_default() {
     let input = "2024-01-01 balance Assets:Bank  1000.5 USD\n";
     let result = format(input, &default_opts());

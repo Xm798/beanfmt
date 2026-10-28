@@ -4,8 +4,8 @@ use pyo3::types::PyBool;
 use std::str::FromStr;
 
 use crate::options::{
-    AmountScope, DecimalMode, Options, SortOrder, SortableDirective, ThousandsSeparator,
-    TimelessPosition,
+    AmountScope, DecimalMode, DisplayPrecision, Options, SortOrder, SortableDirective,
+    ThousandsSeparator, TimelessPosition, merge_display_precision,
 };
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -34,7 +34,7 @@ fn parse_sort(obj: &Bound<'_, PyAny>) -> PyResult<SortOrder> {
     parse_enum(&s)
 }
 
-fn parse_sort_exclude(items: Vec<String>) -> PyResult<Vec<SortableDirective>> {
+fn parse_enum_list<T: FromStr<Err = String>>(items: Vec<String>) -> PyResult<Vec<T>> {
     items.iter().map(|s| parse_enum(s)).collect()
 }
 
@@ -47,6 +47,7 @@ fn build_options(
     thousands_separator: Option<String>,
     decimal_mode: Option<DecimalMode>,
     decimal_places: Option<usize>,
+    display_precision: Option<Vec<DisplayPrecision>>,
     amount_scope: Option<AmountScope>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
@@ -67,6 +68,7 @@ fn build_options(
         thousands_separator: ts,
         decimal_mode: decimal_mode.unwrap_or(defaults.decimal_mode),
         decimal_places: decimal_places.unwrap_or(defaults.decimal_places),
+        display_precision: display_precision.unwrap_or(defaults.display_precision),
         amount_scope: amount_scope.unwrap_or(defaults.amount_scope),
         spaces_in_braces: spaces_in_braces.unwrap_or(defaults.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(defaults.fixed_cjk_width),
@@ -100,6 +102,7 @@ impl PyOptions {
         sort = None,
         sort_timeless = None,
         sort_exclude = None,
+        display_precision = None,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -116,12 +119,14 @@ impl PyOptions {
         sort: Option<&Bound<'_, PyAny>>,
         sort_timeless: Option<String>,
         sort_exclude: Option<Vec<String>>,
+        display_precision: Option<Vec<String>>,
     ) -> PyResult<Self> {
         let sort = sort.map(parse_sort).transpose()?;
         let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
-        let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+        let sort_exclude = sort_exclude.map(parse_enum_list).transpose()?;
         let decimal_mode = decimal_mode.map(|s| parse_enum(&s)).transpose()?;
         let amount_scope = amount_scope.map(|s| parse_enum(&s)).transpose()?;
+        let display_precision = display_precision.map(parse_enum_list).transpose()?;
         let inner = build_options(
             indent,
             currency_column,
@@ -130,6 +135,7 @@ impl PyOptions {
             thousands_separator,
             decimal_mode,
             decimal_places,
+            display_precision,
             amount_scope,
             spaces_in_braces,
             fixed_cjk_width,
@@ -159,10 +165,16 @@ impl PyOptions {
         };
         let sort_exclude: Vec<String> = o.sort_exclude.iter().map(|d| format!("'{d}'")).collect();
         let sort_exclude_str = format!("[{}]", sort_exclude.join(", "));
+        let display_precision: Vec<String> = o
+            .display_precision
+            .iter()
+            .map(|p| format!("'{p}'"))
+            .collect();
+        let display_precision_str = format!("[{}]", display_precision.join(", "));
         format!(
             "Options(indent={}, currency_column={}, cost_column={}, inline_comment_column={}, \
              thousands_separator='{}', decimal_mode='{}', decimal_places={}, \
-             amount_scope='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
+             display_precision={}, amount_scope='{}', spaces_in_braces={}, fixed_cjk_width={}, sort={}, \
              sort_timeless={}, sort_exclude={})",
             o.indent,
             o.currency_column,
@@ -171,6 +183,7 @@ impl PyOptions {
             ts,
             o.decimal_mode,
             o.decimal_places,
+            display_precision_str,
             o.amount_scope,
             if o.spaces_in_braces { "True" } else { "False" },
             if o.fixed_cjk_width { "True" } else { "False" },
@@ -232,6 +245,7 @@ fn resolve_options(
     thousands_separator: Option<String>,
     decimal_mode: Option<String>,
     decimal_places: Option<usize>,
+    display_precision: Option<Vec<DisplayPrecision>>,
     amount_scope: Option<String>,
     spaces_in_braces: Option<bool>,
     fixed_cjk_width: Option<bool>,
@@ -265,6 +279,10 @@ fn resolve_options(
         thousands_separator: ts,
         decimal_mode,
         decimal_places: decimal_places.unwrap_or(base.decimal_places),
+        display_precision: match display_precision {
+            Some(overrides) => merge_display_precision(base.display_precision, overrides),
+            None => base.display_precision,
+        },
         amount_scope,
         spaces_in_braces: spaces_in_braces.unwrap_or(base.spaces_in_braces),
         fixed_cjk_width: fixed_cjk_width.unwrap_or(base.fixed_cjk_width),
@@ -319,6 +337,7 @@ fn load_project_config(dir: &str) -> PyResult<PyOptions> {
     sort = None,
     sort_timeless = None,
     sort_exclude = None,
+    display_precision = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format(
@@ -337,10 +356,12 @@ fn format(
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
     sort_exclude: Option<Vec<String>>,
+    display_precision: Option<Vec<String>>,
 ) -> PyResult<String> {
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
-    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_enum_list).transpose()?;
+    let display_precision = display_precision.map(parse_enum_list).transpose()?;
     let opts = resolve_options(
         options,
         crate::config::FileConfig::default(),
@@ -351,6 +372,7 @@ fn format(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        display_precision,
         amount_scope,
         spaces_in_braces,
         fixed_cjk_width,
@@ -380,6 +402,7 @@ fn format(
     sort = None,
     sort_timeless = None,
     sort_exclude = None,
+    display_precision = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_file(
@@ -399,6 +422,7 @@ fn format_file(
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
     sort_exclude: Option<Vec<String>>,
+    display_precision: Option<Vec<String>>,
 ) -> PyResult<String> {
     if options.is_some() && config.is_some() {
         return Err(PyValueError::new_err(
@@ -407,7 +431,8 @@ fn format_file(
     }
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
-    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_enum_list).transpose()?;
+    let display_precision = display_precision.map(parse_enum_list).transpose()?;
     let base_config = resolve_config_param(config, path)?;
     let opts = resolve_options(
         options,
@@ -419,6 +444,7 @@ fn format_file(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        display_precision,
         amount_scope,
         spaces_in_braces,
         fixed_cjk_width,
@@ -451,6 +477,7 @@ fn format_file(
     sort = None,
     sort_timeless = None,
     sort_exclude = None,
+    display_precision = None,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn format_recursive(
@@ -470,6 +497,7 @@ fn format_recursive(
     sort: Option<&Bound<'_, PyAny>>,
     sort_timeless: Option<String>,
     sort_exclude: Option<Vec<String>>,
+    display_precision: Option<Vec<String>>,
 ) -> PyResult<Vec<(String, String)>> {
     use std::path::Path;
 
@@ -480,7 +508,8 @@ fn format_recursive(
     }
     let sort = sort.map(parse_sort).transpose()?;
     let sort_timeless = sort_timeless.map(|s| parse_enum(&s)).transpose()?;
-    let sort_exclude = sort_exclude.map(parse_sort_exclude).transpose()?;
+    let sort_exclude = sort_exclude.map(parse_enum_list).transpose()?;
+    let display_precision = display_precision.map(parse_enum_list).transpose()?;
 
     let p = Path::new(path);
     if !p.exists() {
@@ -500,6 +529,7 @@ fn format_recursive(
         thousands_separator,
         decimal_mode,
         decimal_places,
+        display_precision,
         amount_scope,
         spaces_in_braces,
         fixed_cjk_width,

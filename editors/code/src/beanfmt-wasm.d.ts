@@ -15,6 +15,7 @@ declare module "*/wasm" {
     sort: string,
     sort_timeless: string,
     sort_exclude: string[] | undefined,
+    display_precision: string[] | undefined,
   ): string;
   export function format_default(input: string): string;
 }

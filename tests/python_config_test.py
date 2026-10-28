@@ -232,6 +232,48 @@ class TestDecimalOptions:
         with pytest.raises(ValueError):
             beanfmt.parse_config('decimal_mode = "round"\n')
 
+    def test_display_precision_kwarg(self):
+        source = "2024-01-01 balance Assets:Points  2900.00 POINTS\n" + self.SOURCE
+        result = beanfmt.format(
+            source, decimal_mode="pad", display_precision=["POINTS:1"]
+        )
+        assert "2900 POINTS" in result
+        assert "1000.50 USD" in result
+
+    def test_display_precision_config_and_repr(self):
+        opts = beanfmt.parse_config(
+            'decimal_mode = "pad"\ndisplay_precision = ["POINTS:1", "CNY:0.01"]\n'
+        )
+        assert "display_precision=['POINTS:1', 'CNY:0.01']" in repr(opts)
+
+    def test_display_precision_is_last_parameter(self):
+        opts = beanfmt.Options(
+            2, 70, 75, 0, "keep", "pad", 2, "all", False, True, "off", "keep", None,
+            ["POINTS:1"],
+        )
+        assert "display_precision=['POINTS:1']" in repr(opts)
+        assert "amount_scope='all'" in repr(opts)
+
+    def test_display_precision_kwarg_merges_per_currency(self):
+        with tempfile.TemporaryDirectory() as d:
+            with open(os.path.join(d, ".beanfmt.toml"), "w") as f:
+                f.write('decimal_mode = "pad"\ndisplay_precision = ["POINTS:1"]\n')
+            path = os.path.join(d, "test.bean")
+            with open(path, "w") as f:
+                f.write(
+                    "2024-01-01 balance Assets:Points  2900.00 POINTS\n"
+                    "2024-01-01 balance Assets:Btc  0.5 BTC\n"
+                )
+            result = beanfmt.format_file(
+                path, config=True, display_precision=["BTC:0.0001"]
+            )
+            assert "2900 POINTS" in result
+            assert "0.5000 BTC" in result
+
+    def test_display_precision_invalid_raises(self):
+        with pytest.raises(ValueError):
+            beanfmt.format(self.SOURCE, display_precision=["POINTS"])
+
     def test_kwarg_overrides_config_file(self):
         with tempfile.TemporaryDirectory() as d:
             with open(os.path.join(d, ".beanfmt.toml"), "w") as f:

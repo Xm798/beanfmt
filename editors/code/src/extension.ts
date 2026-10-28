@@ -28,6 +28,7 @@ interface BeanfmtConfig {
   thousands?: string;
   decimal_mode?: string;
   decimal_places?: number;
+  display_precision?: string[];
   amount_scope?: string;
   spaces_in_braces?: boolean;
   fixed_cjk_width?: boolean;
@@ -49,6 +50,10 @@ function validateConfig(raw: Record<string, unknown>): BeanfmtConfig {
     config.decimal_mode = raw.decimal_mode;
   if (typeof raw.decimal_places === "number")
     config.decimal_places = raw.decimal_places;
+  if (Array.isArray(raw.display_precision))
+    config.display_precision = raw.display_precision.filter(
+      (s): s is string => typeof s === "string",
+    );
   if (typeof raw.amount_scope === "string")
     config.amount_scope = raw.amount_scope;
   if (typeof raw.spaces_in_braces === "boolean")
@@ -184,6 +189,13 @@ export async function activate(
           0,
           20,
         );
+        const displayPrecisionRaw = resolve(
+          "displayPrecision",
+          pc.display_precision,
+          [] as string[],
+        );
+        const displayPrecision =
+          displayPrecisionRaw.length > 0 ? displayPrecisionRaw : undefined;
         const amountScope = resolve("amountScope", pc.amount_scope, "all");
         const spacesInBraces = resolve(
           "spacesInBraces",
@@ -220,6 +232,7 @@ export async function activate(
             sort,
             sortTimeless,
             sortExclude,
+            displayPrecision,
           );
 
           if (result === input) {
