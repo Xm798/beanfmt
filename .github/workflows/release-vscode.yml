@@ -2,7 +2,7 @@ name: Release VSCode Extension
 
 on:
   push:
-    tags: ["vscode-v*"]
+    tags: ["vscode/v*"]
 
 permissions:
   contents: write

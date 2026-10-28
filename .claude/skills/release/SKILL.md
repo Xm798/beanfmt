@@ -1,6 +1,6 @@
 ---
 name: release
-description: Automate version releases — analyze git log since last tag to suggest semver bump, update version, commit, tag, and push. Supports two independent release targets: core (crates.io + PyPI, tag v*) and vscode (VS Code Marketplace, tag vscode-v*). Use when the user says "release", "bump version", "cut a release", "tag a new version", "publish a new version", or any variation of preparing a version release.
+description: Automate version releases — analyze git log since last tag to suggest semver bump, update version, commit, tag, and push. Supports two independent release targets: core (crates.io + PyPI, tag v*) and vscode (VS Code Marketplace, tag vscode/v*). Use when the user says "release", "bump version", "cut a release", "tag a new version", "publish a new version", or any variation of preparing a version release.
 ---
 
 # Release
@@ -12,7 +12,7 @@ There are two independent release targets with separate version numbers:
 | Target | Version source | Tag format | Publishes to |
 |---|---|---|---|
 | **core** | `Cargo.toml` | `v0.7.0` | crates.io + PyPI + GitHub Release |
-| **vscode** | `editors/code/package.json` | `vscode-v0.7.0` | VS Code Marketplace + GitHub Release |
+| **vscode** | `editors/code/package.json` | `vscode/v0.7.0` | VS Code Marketplace + GitHub Release |
 
 ## Step 0: Determine release target
 
@@ -26,7 +26,7 @@ Ask the user which target to release. If the user already specified (e.g. "relea
 Determine the latest tag for the chosen target:
 
 - **core**: `git tag --sort=-v:refname | grep -E '^v[0-9]' | head -1`
-- **vscode**: `git tag --sort=-v:refname | grep -E '^vscode-v' | head -1`
+- **vscode**: `git tag --sort=-v:refname | grep -E '^vscode/v' | head -1`
 
 Then list commits since that tag: `git log <latest-tag>..HEAD --oneline`
 
@@ -87,7 +87,7 @@ Stage only the changed files by name — do not use `git add -A`.
 ## Step 4: Create tag
 
 - **core**: `git tag v<new_version>`
-- **vscode**: `git tag vscode-v<new_version>`
+- **vscode**: `git tag vscode/v<new_version>`
 
 ## Step 5: Push
 
