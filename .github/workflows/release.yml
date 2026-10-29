@@ -101,7 +101,7 @@ jobs:
         with:
           name: sdist
           path: dist/
-      - uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - run: uv publish --trusted-publishing always --check-url https://pypi.org/simple/ dist/*
 
   github-release:
